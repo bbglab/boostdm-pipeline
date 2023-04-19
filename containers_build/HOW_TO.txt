@@ -1,0 +1,2 @@
+cd boostdm/
+sudo singularity build boostdm.simg Singularity

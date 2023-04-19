@@ -1,0 +1,11 @@
+# HOWTO RUN THE NOTEBOOKS
+
+## Run notebook in the cluster with singularity
+
+interactive
+
+unset XDG_RUNTIME_DIR && /opt/singularity/bin/singularity exec boostdm-xgb-notebook.simg jupyter notebook --ip=0.0.0.0
+
+# ...in a separate terminal, using what jupyter notebook outputs
+
+ssh -L <port>:bbgn<node>:<port> -p 22022 <user>@bbgcluster
