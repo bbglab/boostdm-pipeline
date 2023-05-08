@@ -111,8 +111,14 @@ XGB_PARAMS = {
 # MUTATION_TIERS = (40, 30, 20, 10, 5)
 # FSCORE_THRESHOLD = 0.8
 
+
+# run: output_20230503
+
 DISCOVERY_TIERS = (0, 0.5, 0.75)
 MUTATION_TIERS = (50, 30, 0)
 FSCORE_THRESHOLD = 0.8
+
+
+# consensus merge parameter
 
 SYSTEMATIC_BIAS = 2.3
