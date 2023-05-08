@@ -21,8 +21,50 @@ feat_dict = {
 }
 
 
+"""
 def encode_feature(data, feature):
 
+    cats = feat_dict[feature]
+    data.loc[~data[feature].isin(cats), feature] = 'none'
+    one_hot = pd.get_dummies(data[[feature]], columns=[feature], prefix_sep='_')
+    for value in cats:
+        col = feature + '_' + str(value)
+        if col not in list(one_hot.columns):
+            one_hot[col] = 0
+    data.drop(columns=feature, inplace=True)
+    to_remove = feature + '_' + 'none'
+    if to_remove in one_hot.columns:
+        one_hot.drop(columns=to_remove, inplace=True)
+    canonical_order = [feature + '_' + str(value) for value in feat_dict[feature]]
+    data = data.join(one_hot[canonical_order])
+    return data
+"""
+
+def cluster_encoding(value):
+    
+    if value == 1:
+        return 1, 1
+    elif value == 2:
+        return 0, 1
+    elif value == 3:
+        return 0, 0
+
+
+def encode_cluster(data, feature):
+    """
+    admissible combinations:
+    cat_1 == 1 => cat_2 == 1
+    cat_1 == 0 & cat_2 == 1
+    cat_1 == 0 & cat_2 == 0
+    """
+
+    data[f'{feature}_1'], data[f'{feature}_2'] = zip(*data[feature].map(cluster_encoding))
+    data.drop(columns=feature, inplace=True)
+    return data
+
+
+def encode_consequence_type(data, feature):
+    
     cats = feat_dict[feature]
     data.loc[~data[feature].isin(cats), feature] = 'none'
     one_hot = pd.get_dummies(data[[feature]], columns=[feature], prefix_sep='_')
@@ -43,7 +85,7 @@ def encoding_test():
 
     data_dict = {'feat1': [1., 2., 3.], 'feat2': [1.4, 3.1, 3.2], 'csqn_type': ['strange', 'none', 'splice_acceptor_variant']}
     data = pd.DataFrame(data_dict)
-    df = encode_feature(data, 'csqn_type')
+    df = encode_consequence_type(data, 'csqn_type')
     print(df.columns)
 
 

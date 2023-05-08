@@ -15,7 +15,7 @@ def add_feature(df, specific_df, global_df):
     # classify mutations
     # TODO get rid of iterrows
     for i, row in df.iterrows():
-        mut_in_motif = 0
+        mut_in_motif = 3  # it was 0, changed to 3 for consistence with other methods
         motif_sig = ''
         symbol = row['gene']
         

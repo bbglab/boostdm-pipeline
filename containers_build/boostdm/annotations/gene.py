@@ -1,5 +1,3 @@
-import os
-
 import click
 import pandas as pd
 
@@ -46,10 +44,13 @@ def iter_tree(tree, ttype):
     generate all the tumor-types that are descendants of ttype in the tree.
     """
 
-    yield ttype
-    if ttype in tree.tree:
-        for child in tree.tree[ttype]:
-            yield iter_tree(tree, child)
+    res = []
+    stack = [ttype]
+    while len(stack) > 0:
+        tt = stack.pop(0)
+        res.append(tt)
+        stack += tree.tree.get(tt, [])
+    return res
 
 
 def set_aachange(row):
@@ -63,7 +64,7 @@ def set_aachange(row):
         return str(wt_aa) + str(pos) + str(mt_aa)
 
 
-def features(df, tumor, clustl_path, hotmaps_path, smregions_path):
+def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
     """add complete set of features"""
 
     # add PhyloP score
@@ -81,17 +82,17 @@ def features(df, tumor, clustl_path, hotmaps_path, smregions_path):
     # add PTMs:
     df = ptms.add_ptms(df)  # from phosphosite-plus
 
+    # tumor-type grouping:
+
     tree = Oncotree()
-    related_ttypes = [ttype for ttype in iter_tree(tree, tumor)]
+    related_ttypes = list(iter_tree(tree, ttype))
 
 
     # Add linear clusters
     clustl_global_data = pd.read_csv(clustl_path, sep='\t')
     clustl_cancer_data = clustl_global_data[clustl_global_data['CANCER_TYPE'].isin(related_ttypes)]
-    clustl_cancer_data = clustl_cancer_data[
-        ['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
-    clustl_global_data = clustl_global_data[
-        ['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
+    clustl_cancer_data = clustl_cancer_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
+    clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
     df = clustl.add_feature(df, clustl_cancer_data, clustl_global_data)
 
     # Add 3D clusters
@@ -118,10 +119,7 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
     mut_features = features(muts, tumor, path_clustl, path_hotmaps, path_smregions)
 
     # keep mutations with specified consequence type
-    mut_features = mut_features[mut_features['csqn_type'].isin(['synonymous',
-                                                                'missense',
-                                                                'nonsense',
-                                                                'splicing'])]
+    mut_features = mut_features[mut_features['csqn_type'].isin(['synonymous', 'missense', 'nonsense', 'splicing'])]
 
     if mut_features.shape[0] == 0:
         raise Exception("There are not 'synonymous', 'missense', 'nonsense', or 'splicing' mutations")

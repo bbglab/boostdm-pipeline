@@ -1,13 +1,13 @@
 
-from boostdm.regression_utils import encode_feature
+from boostdm.regression_utils import encode_cluster, encode_consequence_type
 
 
 def encoding(df):
     """encoding categorical features for gradient boosting to handle them"""
-    df = encode_feature(df, 'csqn_type')
-    df = encode_feature(df, 'CLUSTL_cat')
-    df = encode_feature(df, 'HotMaps_cat')
-    df = encode_feature(df, 'smRegions_cat')
+    df = encode_consequence_type(df, 'csqn_type')
+    df = encode_cluster(df, 'CLUSTL_cat')
+    df = encode_cluster(df, 'HotMaps_cat')
+    df = encode_cluster(df, 'smRegions_cat')
     return df
 
 

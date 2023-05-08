@@ -1,9 +1,6 @@
 # Imports
 # -------
 import itertools
-import os
-import warnings
-
 import click
 import json
 import numpy as np

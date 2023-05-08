@@ -29,10 +29,9 @@ class Hierarchy:
             hierarchy starting from {ttype, gene}
         """
 
-        yield ttype, gene
-        while ttype != 'CANCER':
-            ttype = self._tree.fetch_parent_ttype(ttype)
+        while ttype is not None:
             yield ttype, gene
+            ttype = self._tree.fetch_parent_ttype(ttype)
 
 
 def meet_condition(fscore, discovery, n_muts):

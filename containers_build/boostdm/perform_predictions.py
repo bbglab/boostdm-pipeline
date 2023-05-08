@@ -144,19 +144,21 @@ def predict(mutations, gene, ttype, model_selection_dict, models_folder, evaluat
 
     # predict on mutations
 
-    mutations.loc[df.index, ['boostDM_score']] = consensus_func(df[COLUMNS_TRAINING])
+    mutations.loc[mutations.index, ['boostDM_score']] = consensus_func(mutations[COLUMNS_TRAINING])
 
     # SHAP explanations
 
-    x_data = df[COLUMNS_TRAINING]
+    x_data = mutations[COLUMNS_TRAINING]
     shap_bootstrap = []
     for model in model['models']:
         explainer = shap.TreeExplainer(model.model)
         shap_bootstrap.append(explainer.shap_values(x_data))
     shap_values = np.mean(shap_bootstrap, axis=0)
 
-    mutations.loc[df.index, COLUMNS_SHAP] = shap_values
+    mutations.loc[mutations.index, COLUMNS_SHAP] = shap_values
     mutations.loc[:, 'boostDM_class'] = mutations['boostDM_score'].apply(lambda x: x >= 0.5)
+
+    mutations['selected_model_ttype'] = ttype
 
     return mutations
 

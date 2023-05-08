@@ -89,8 +89,10 @@ class Oncotree:
         :param ttype: string, name of tumor type
         :return: name of the parent
         """
-        if ttype not in self.ttypes:
+
+        if (ttype not in self.ttypes) or (ttype == 'CANCER'):
             return None
+
         for parent, childs in self.tree.items():
             if ttype in childs:
                 return parent
