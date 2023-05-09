@@ -200,6 +200,10 @@ process SplitCV {
     label "boostdm"
     publishDir "${OUTPUT}/splitcv", mode: 'copy'
 
+    memory { task.memory * task.attempt }
+    errorStrategy { task.attempt > 3 ? 'ignore': 'retry' }
+
+
     input:
         tuple val(cohort), path(input) from IN_CV
 
@@ -227,6 +231,10 @@ process SplitCVMetacohort {
     label "boostdm"
     publishDir "${OUTPUT}", mode: 'copy'
 
+    memory { task.memory * task.attempt }
+    errorStrategy { task.attempt > 3 ? 'ignore': 'retry' }
+
+
     input:
         path(input) from OUT_CV_COHORTS.collect()
 
@@ -252,6 +260,11 @@ process TrainingMeta {
     label "boostdm"
     publishDir "${OUTPUT}/training_meta", mode: 'copy'
 
+    memory { task.memory * task.attempt }
+    errorStrategy { task.attempt > 3 ? 'ignore': 'retry' }
+
+
+
 	input:
 		tuple val(ttype), val(gene), path(input) from OUT_CV_META_R
 
@@ -272,10 +285,10 @@ process TrainingMeta {
 }
 
 
-/* Evaluation */
+/* Cross-validation */
 
 
-process AutoEvaluationMeta {
+process CrossValidation {
     tag "Evaluating model ${ttype}-${gene}"
     label "boostdm"
     publishDir "${OUTPUT}/evaluation", mode: 'copy'
@@ -297,102 +310,5 @@ process AutoEvaluationMeta {
 		runner.sh evaluation/auto.py \
 			--model ${input} \
 			--output ${output}
-		"""
-}
-
-OUT_EVAL_META.into{ OUT_EVAL_META1; OUT_EVAL_META2}
-
-
-/* Discovery index */
-
-process Mutations4Discovery {
-    tag 'Mutations for discovery'
-    label "boostdm"
-    publishDir "${OUTPUT}/discovery", mode: 'copy'
-
-    input:
-        path input from DNDS_ANNOTMUTS_FILES2.collect()
-
-    output:
-        path(output) into DISCOVERY_MUTS
-
-	script:
-	  	output = "mutations.tsv.gz"
-		"""
-		runner.sh discovery_index/muts.py \
-			--output ${output} \
-			${input}
-		"""
-}
-
-
-VARIANTS_STATS_JSON_FOLDER = Channel.fromPath("${INTOGEN_DATASETS}/steps/variants", type: 'dir')
-
-process CollectVariants {
-
-    tag 'Create variants.json'
-    label "boostdm"
-    publishDir "${OUTPUT}/discovery", mode: 'copy'
-
-    input:
-        path input from VARIANTS_STATS_JSON_FOLDER
-
-    output:
-        path(output) into VARIANTS_JSON
-
-    script:
-  	output = "variants.json"
-	"""
-	runner.sh discovery_index/preprocess_variants.py \
-		--inputfolder ${input} \
-		--output ${output}
-	"""
-}
-
-
-process Samples4Discovery {
-    tag 'Samples for discovery'
-    label "boostdm"
-    publishDir "${OUTPUT}/discovery", mode: 'copy'
-
-    input:
-        path input from VARIANTS_JSON
-        path cohorts from COHORTS_SUMMARY4
-
-    output:
-        path(output) into DISCOVERY_SAMPLES
-
-	script:
-	  	output = "samples.json"
-		"""
-		runner.sh discovery_index/samples.py \
-			--output ${output} \
-			--cohorts ${cohorts} \
-			${input}
-		"""
-}
-
-
-process DiscoveryIndex {
-    tag 'Discovery index'
-    label "boostdm"
-    publishDir "${OUTPUT}/discovery", mode: 'copy'
-
-    input:
-        val (input) from OUT_EVAL_META1.collect()
-        path samples from DISCOVERY_SAMPLES
-        path mutations from DISCOVERY_MUTS
-
-    output:
-        path(output) into DISCOVERY_INDEX
-
-	script:
-	  	output = "discovery.tsv.gz"
-		"""
-		runner.sh discovery_index/discovery.py \
-			--output ${output} \
-			--mutations ${mutations} \
-			--samples ${samples} \
-			--evaluation-path ${OUTPUT}/evaluation
 		"""
 }
