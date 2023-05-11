@@ -11,15 +11,16 @@ def assign(chr_, pos, clusters):
         (clusters_specific['chromosome'] == chr_) & (clusters_specific['pos'] == pos)]
 
     if len(cluster1) > 0:
-        return 1
+        return 2  # tumor type specific cluster
+    
     else:
         clusters_pan = clusters['pan']
         cluster2 = clusters_pan[
             (clusters_pan['chromosome'] == chr_) & (clusters_pan['pos'] == pos)]
         if len(cluster2) > 0:
-            return 2
+            return 1  # another tumor type cluster
 
-    return 3  # no cluster
+    return 0  # no cluster
 
 
 def add_feature(df, specific_df, global_df):
@@ -29,11 +30,11 @@ def add_feature(df, specific_df, global_df):
         'pan': global_df
     }
 
-    df['HotMaps_cat'] = df.apply(
-        lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)), axis=1
-    )
+    df['HotMaps'] = df.apply(
+        lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)), 
+        axis=1)
 
-    df.HotMaps_cat = df.HotMaps_cat.astype('int8')
+    df.HotMaps = df.HotMaps.astype('int8')
 
     return df
 

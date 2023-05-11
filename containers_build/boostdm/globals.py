@@ -67,11 +67,8 @@ AGGREGATION_DICT = {'synonymous_variant': 'synonymous',
                     'intron_variant': 'splicing'}
 
 COLUMNS_TRAINING = [
-        'CLUSTL_SCORE', 'CLUSTL_cat_1', 'CLUSTL_cat_2',
-        'HotMaps_cat_1', 'HotMaps_cat_2',
-        'smRegions_cat_1', 'smRegions_cat_2',
-        'PhyloP',
-        'nmd',
+        'CLUSTL', 'HotMaps', 'smRegions', 'PhyloP',
+        'nmd', 
         'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination',
         'csqn_type_missense', 'csqn_type_nonsense', 'csqn_type_splicing', 'csqn_type_synonymous'
     ]
@@ -90,7 +87,7 @@ XGB_PARAMS = {
         "reg_lambda": 1,
         "random_state": 42,
         "scale_pos_weight": 1,
-        "subsample": 0.7,
+        "subsample": 1.0,
         "reg_alpha": 0,
         "max_delta_step": 0,
         "min_child_weight": 1,
