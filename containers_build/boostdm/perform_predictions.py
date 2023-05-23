@@ -102,7 +102,7 @@ def _predict(mutations, models_folder, evaluations_folder, high_quality_only=Tru
         shap_bootstrap = []
         for model in model['models']:
             explainer = shap.TreeExplainer(model.model)
-            shap_bootstrap.append(explainer.shap_values(x_data))
+            shap_bootstrap.append(explainer.shap_values(x_data, check_additivity=False))
         shap_values = np.mean(shap_bootstrap, axis=0)
 
         mutations.loc[df.index, COLUMNS_SHAP] = shap_values
@@ -152,7 +152,7 @@ def predict(mutations, gene, ttype, model_selection_dict, models_folder, evaluat
     shap_bootstrap = []
     for model in model['models']:
         explainer = shap.TreeExplainer(model.model)
-        shap_bootstrap.append(explainer.shap_values(x_data))
+        shap_bootstrap.append(explainer.shap_values(x_data, check_additivity=False))
     shap_values = np.mean(shap_bootstrap, axis=0)
 
     mutations.loc[mutations.index, COLUMNS_SHAP] = shap_values
