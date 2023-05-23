@@ -40,8 +40,7 @@ def add_feature(df, specific_df, global_df):
 
     df['motif'] = significant_motif
     df['smRegions'] = isinmotifs
-    
-    df.smRegions = df.smRegions.astype('int8')
+
     return df
 
 

@@ -3,40 +3,44 @@ import click
 import pandas as pd
 
 
-def exists(clusts, chr_, pos):
+def matching_cluster(clusts, chr_, pos):
     """
     clusts: dataframe
     chr_: chromosome
     pos: position
     returns a tuple (bool, value):
         bool: whether there is a cluster overlapping the genomic coords (chr_, pos)
-        value: if the answer is True, value = clusters overlapping the genomic coords
-               if the answer is False, value = None
+        value: if the bool is True, value = clusters overlapping the genomic coords
+               if the bool is False, value = None
     """
 
     # check for chr_ and position in cluster table
-    if clusts is not None:
-        if len(clusts) > 0:
-            c = clusts[(clusts['CHROMOSOME'] == chr_) & (clusts['5_COORD'] <= pos) & (pos <= clusts['3_COORD'])]
-            if len(c) > 0:
-                return True, c
+    if (clusts is not None) and (len(clusts) > 0):
+        c = clusts[(clusts['CHROMOSOME'] == chr_) & (clusts['5_COORD'] <= pos) & (pos <= clusts['3_COORD'])]
+        if len(c) > 0:
+            return True, c
     return False, None
 
 
-def assign(chr_, pos, clusters, score_choose_function=max):
-    # TODO: check whether this function needs to be modified
+def assign(chr_, pos, clusters):
 
-    e1, cluster1 = exists(clusters['specific'], chr_, pos)
-    
+    e1, _ = matching_cluster(clusters['specific'], chr_, pos)
+    e2, _ = matching_cluster(clusters['pan'], chr_, pos)
+
+
+    # debugging
+
+    if pos == 7829993:
+
+        print(matching_cluster(clusters['specific'], chr_, pos))
+        print(matching_cluster(clusters['pan'], chr_, pos))
+
     if e1:
-        return 2  # cluster in specific tumor type
-    
+        return 2.  # cluster in specific tumor type
+    elif e2:
+        return 1.  # cluster in another tumor type
     else:
-        e2, cluster2 = exists(clusters['pan'], chr_, pos)
-        if e2:
-            return 1  # cluster in another tumor type
-    
-    return 0, 0.0  # no cluster
+        return 0.  # no cluster
 
 
 def add_feature(df, specific_df, global_df):
@@ -49,8 +53,6 @@ def add_feature(df, specific_df, global_df):
     df['CLUSTL'] = df.apply(
         lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)), 
         axis=1)
-    
-    df.CLUSTL = df.CLUSTL.astype('int8')
     
     return df
 

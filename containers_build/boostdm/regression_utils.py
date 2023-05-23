@@ -15,6 +15,14 @@ warnings.filterwarnings(module='shap*', action='ignore', category=RuntimeWarning
 csqn_type_list = ['missense', 'nonsense', 'splicing', 'synonymous']
 
 
+def encode_consequence_type(data):
+    data.loc[~data['csqn_type'].isin(csqn_type_list), 'csqn_type'] = 'none'
+    one_hot = pd.get_dummies(data, columns=['csqn_type'], prefix_sep='_')
+    one_hot.drop(columns=['csqn_type_none'], inplace=True)
+    return one_hot
+
+
+"""
 def encode_consequence_type(data, feature):
     
     data.loc[~data[feature].isin(csqn_type_list), feature] = 'none'
@@ -30,7 +38,7 @@ def encode_consequence_type(data, feature):
     canonical_order = [feature + '_' + str(value) for value in csqn_type_list]
     data = data.join(one_hot[canonical_order])
     return data
-
+"""
 
 def encoding_test():
 

@@ -9,7 +9,7 @@ import pybedtools
 import tqdm
 
 from boostdm import BoostDMError
-from boostdm.annotations.utils import encoding, rectify_synonymous, rectify_missense, rectify_splicing
+from boostdm.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
 from boostdm.globals import CANONICAL_TRANSCRIPTS_FILE, MNVS_FILE, COHORTS_PATH, DRIVERS_PATH
 from boostdm.oncotree import Oncotree
 from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions, dndscv
@@ -111,13 +111,13 @@ def features(df, cohort, clustl_group_path, hotmaps_group_path, smregions_group_
 
     clustl_global_data = pd.read_csv(clustl_group_path, sep='\t')
     clustl_ttype_data = clustl_global_data[clustl_global_data['CANCER_TYPE'] == ttype]
-    clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
+    # clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
     df = clustl.add_feature(df, clustl_ttype_data, clustl_global_data)
 
     # Add 3D clusters
     hotmaps_global_data = pd.read_csv(hotmaps_group_path, sep='\t')
     hotmaps_ttype_data = hotmaps_global_data[hotmaps_global_data['CANCER_TYPE'] == ttype]
-    hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
+    # hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
     df = hotmaps.add_feature(df, hotmaps_ttype_data, hotmaps_global_data)
 
     # add role
@@ -154,6 +154,7 @@ def retrieve_transcript():
                          sep='\t', header=None, compression='gzip', low_memory=False, skiprows=1)
 
     # TODO: verify the columns we are selecting are the right ones
+    
     canonical_transcript_df = canonical_transcript_df[[0, 1, 2, 6]].copy()
     canonical_transcript_df.columns = ['chr', 'start', 'end', 'gene']
     return canonical_transcript_df
@@ -194,6 +195,7 @@ def load_drivers(cohort, df):
 
 
 def load_mutations(dndscv_annotated, drivers, cohort):
+
     df = pd.read_csv(dndscv_annotated, sep='\t')  # os.path.join(dndscv_path, f'{cohort}.annotmuts.gz')
 
     df = df[df['gene'].isin(drivers)]
@@ -279,14 +281,6 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     with open(mutrate_fn, 'rt') as f:
         mutrate = json.load(f)
 
-    """
-    # FIXME load as a single JSON when changes are implemented in intogen+
-    if os.path.exists(mutrate):
-        mr = MutrateReader(mutrate)
-        for gene in tqdm.tqdm(drivers):
-            mutrate[gene] = mr.load(gene)
-    """
-
     initial = initialize_trainset(df, drivers)
     initial = dndscv.filter(initial, dndscv_file, xs_thresh=xs_thresh)
     initial.rename(columns={'mut': 'alt'}, inplace=True)
@@ -310,14 +304,17 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     df['chr'] = df.apply(lambda row: set_string_chr(row), axis=1)
     df['pos'] = df.apply(lambda row: int(row['pos']), axis=1)
 
+    # Reset index
+    df.reset_index(inplace=True)
+
     # Add features
     df = features(df, cohort, clustl_group_file, hotmaps_group_file, smregions_group_file)
-    df = encoding(df)
+    df = encode_consequence_type(df)
     df = df[(df['csqn_type_synonymous'] != 1) | (df['response'] != 1)]
     df = rectify_synonymous(df)
     df = rectify_missense(df)
     df = rectify_splicing(df)
-
+    
     return df
 
 
