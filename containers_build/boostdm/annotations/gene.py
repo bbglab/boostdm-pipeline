@@ -115,7 +115,7 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
     muts = read_muts(mutations_file)
 
     # Reset index
-    muts.reset_index(inplace=True)
+    muts.reset_index(drop=True, inplace=True)
 
     # annotate mutations
     df = features(muts, tumor, path_clustl, path_hotmaps, path_smregions)
@@ -148,10 +148,6 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
 def cli(gene, ttype, mutations, clustl_group, hotmaps_group, smregions_group):
     df = build_table(mutations, ttype, clustl_group, hotmaps_group, smregions_group)
     df.to_csv(f'{gene}.{ttype}.annotated.tsv.gz', sep='\t', index=False, compression="gzip")
-
-    # for testing only:
-    # df = pd.DataFrame([])
-    # df.to_csv(f'{gene}.{ttype}.annotated.tsv.gz', sep='\t', index=False, compression="gzip")
 
 
 if __name__ == '__main__':

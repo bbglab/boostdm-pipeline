@@ -77,6 +77,7 @@ def set_string_chr(row):
 
 
 def oncotree_sisters(cohort):
+    
     """Generator of cohorts belonging to the same ttype type as 'cohort'"""
     # TODO re-implement function in terms of oncotree
     tree = Oncotree()
@@ -226,6 +227,7 @@ def initialize_trainset(df, drivers):
 
 
 def build_positive_set(df_expect):
+
     canonical_transcript = retrieve_transcript()
     pos = intersect_region_mutations(canonical_transcript, df_expect)
     pos['response'] = 1
@@ -305,7 +307,7 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     df['pos'] = df.apply(lambda row: int(row['pos']), axis=1)
 
     # Reset index
-    df.reset_index(inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
     # Add features
     df = features(df, cohort, clustl_group_file, hotmaps_group_file, smregions_group_file)
@@ -320,19 +322,15 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
 
 @click.command()
 @click.option('--cohort', type=str)
-# @click.option('--drivers-summary', 'summary', type=click.Path(exists=True), help='Drivers summary from IntOGen')
 @click.option('--dndscv-path', 'dndscv_path', type=click.Path(exists=True), help='Cohort dNdsCV out')
 @click.option('--dndscv-annotmuts-path', 'dnds_muts_path', type=click.Path(exists=True), help='Cohort dNdsCV annotmuts out')
 @click.option('--mutrate-path', 'mutrate_path', type=click.Path(exists=True), help='Cohort mutrate out')
-# @click.option('--clustl-path', 'clustl_path', type=click.Path(exists=True), help='Cohort OncodriveCLUSTL out')
 @click.option('--clustl-group-path', 'clustl_group_path', type=click.Path(exists=True), help='Combined OncodriveCLUSTL out')
-# @click.option('--hotmaps-path', 'hotmaps_path', type=click.Path(exists=True), help='Cohort HotMAPS out')
 @click.option('--hotmaps-group-path', 'hotmaps_group_path', type=click.Path(exists=True), help='Combined HotMAPS out')
-# @click.option('--smregions-path', 'smregions_path', type=click.Path(exists=True), help='Cohort smregions out')
 @click.option('--smregions-group-path', 'smregions_group_path', type=click.Path(exists=True), help='Combined smregions out')
 @click.option('--out', type=click.Path())
 @click.option('--seed', type=int, default=None)
-@click.option('--splits', type=int, default=42)
+@click.option('--splits', type=int, default=50)
 @click.option('--threshold', type=float, default=0.85)
 def cli(cohort, dndscv_path, dnds_muts_path, mutrate_path, clustl_group_path,
         hotmaps_group_path, smregions_group_path, out, seed, splits, threshold):

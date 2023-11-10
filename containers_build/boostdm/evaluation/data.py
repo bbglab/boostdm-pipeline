@@ -66,6 +66,7 @@ def evaluate(model_evaluations):
 @click.option('--discovery_path', 'discovery_path', type=click.Path(), help='file path to discovery output table')
 @click.option('--output', 'output_file', type=click.Path(), help='output folder')
 def cli(eval_folder, discovery_path, output_file):
+    
     models = {}
 
     df_discovery = pd.read_csv(discovery_path, sep='\t')

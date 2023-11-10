@@ -33,7 +33,7 @@ class ExtendedHierarchy(Hierarchy):
         return gene, self.get_model(gene, ttype)
 
 
-def weighted_consensus(model_obj, eval_obj, use_weights=True):
+def weighted_consensus(model_obj, eval_obj, use_weights=False):
     """
     Args:
         model_obj: instance of model for a specific ttype-gene
@@ -157,8 +157,7 @@ def predict(mutations, gene, ttype, model_selection_dict, models_folder, evaluat
 
     mutations.loc[mutations.index, COLUMNS_SHAP] = shap_values
     mutations.loc[:, 'boostDM_class'] = mutations['boostDM_score'].apply(lambda x: x >= 0.5)
-
-    mutations['selected_model_ttype'] = ttype
+    mutations['selected_model_ttype'] = selected_model_ttype
 
     return mutations
 
