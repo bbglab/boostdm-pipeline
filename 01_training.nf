@@ -200,10 +200,6 @@ process SplitCV {
     label "boostdm"
     publishDir "${OUTPUT}/splitcv", mode: 'copy'
 
-    memory { task.memory * task.attempt }
-    errorStrategy { task.attempt > 3 ? 'ignore': 'retry' }
-
-
     input:
         tuple val(cohort), path(input) from IN_CV
 
@@ -230,10 +226,6 @@ process SplitCVMetacohort {
     tag 'Creating the cross validation splits for metacohorts'
     label "boostdm"
     publishDir "${OUTPUT}", mode: 'copy'
-
-    memory { task.memory * task.attempt }
-    errorStrategy { task.attempt > 3 ? 'ignore': 'retry' }
-
 
     input:
         path(input) from OUT_CV_COHORTS.collect()
