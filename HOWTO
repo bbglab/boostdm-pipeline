@@ -1,0 +1,17 @@
+# open an interactive
+
+$ interactive
+
+# enter conda environment
+
+$ conda activate nextflow-env
+
+# check the paths for input and output in the boostdm.nf script
+
+# check the paths for input, cache, output in the nextflow.config script
+
+# check the settings in config/bbglab.conf
+
+# run nextflow command
+
+$ nextflow run <run_name>.nf -profile bbglab -resume
