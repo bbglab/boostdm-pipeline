@@ -4,23 +4,22 @@
 
 The method's rationale and analysis results thereof are described in this study:
 
-**Identification of Clonal Hematopoiesis Driver Mutations through In Silico Saturation Mutagenesis**
-Santiago Demajo, Joan Enric Ramis-Zaldivar, Ferran Muiños, Miguel L Grau, Maria Andrianova, Nuria Lopez-Bigas, Abel Gonzalez-Perez
-medRxiv 2023.12.13.23299893 
-URL: [https://doi.org/10.1101/2023.12.13.23299893](https://doi.org/10.1101/2023.12.13.23299893)
+  *Identification of Clonal Hematopoiesis Driver Mutations through In Silico Saturation Mutagenesis*  
+  Santiago Demajo, Joan Enric Ramis-Zaldivar, Ferran Muiños, Miguel L Grau, Maria Andrianova, Nuria Lopez-Bigas, Abel Gonzalez-Perez  
+  URL: [https://doi.org/10.1101/2023.12.13.23299893](https://doi.org/10.1101/2023.12.13.23299893)
 
 The method is based on two previous projects: **IntOGen-CH** and **boostDM**
 
 **IntOGen-CH** pipeline provides a compendium of CH driver genes and mutational features upon using the **IntOGen** pipeline with a catalog of high VAF somatic mutations called in normal blood from tumor samples by reverse variant calling, which has been described in this study:
 
-**Discovering the drivers of clonal hematopoiesis**
-Oriol Pich, Iker Reyes-Salazar, Abel Gonzalez-Perez, Nuria Lopez-Bigas 
-URL: [https://doi.org/10.1038/s41467-022-31878-0](https://doi.org/10.1038/s41467-022-31878-0)
+  *Discovering the drivers of clonal hematopoiesis*  
+  Oriol Pich, Iker Reyes-Salazar, Abel Gonzalez-Perez, Nuria Lopez-Bigas  
+  URL: [https://doi.org/10.1038/s41467-022-31878-0](https://doi.org/10.1038/s41467-022-31878-0)
 
 **boostDM** is a methodology to annotate mutations in cancer genes for their potential to drive tumorigenesis, which has been described in another study:
 
-  **In silico saturation mutagenesis of cancer genes**  
-  Ferran Muiños, Francisco Martinez-Jimenez, Oriol Pich, Abel Gonzalez-Perez, Nuria Lopez-Bigas  
+  *In silico saturation mutagenesis of cancer genes*  
+  Ferran Muiños, Francisco Martinez-Jimenez, Oriol Pich, Abel Gonzalez-Perez, Nuria Lopez-Bigas    
   URL: [https://www.nature.com/articles/s41586-021-03771-1](https://www.nature.com/articles/s41586-021-03771-1)
 
 ## Content
