@@ -10,9 +10,9 @@ def get_csqn_type(chr_, pos, alt, gene, reader):
     for data in reader.get(chr_, pos, pos):
         
         alt_vep = (data[3] == alt)           # same alternate allele
-        canonical_vep = (data[-4] == 'YES')  # impose canonical transcript
-        correct_gene = (data[-7] == gene)    # skip cases with antisense overlapping genes
-        if alt_vep and canonical_vep and correct_gene:
+        mane_vep = (data[-5] != '-')  # impose mane transcript
+        correct_gene = (data[-9] == gene)    # skip cases with antisense overlapping genes
+        if alt_vep and mane_vep and correct_gene:
             csqn = CONSEQUENCES_LIST[min([CONSEQUENCES_DICT[c] for c in data[7].split(',')])]
             return AGGREGATION_DICT.get(csqn, None)
     

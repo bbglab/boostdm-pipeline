@@ -27,9 +27,9 @@ def get_exon(chr_, pos, alt,gene, reader):
 
     for data in reader.get(chr_, pos, pos):
         alt_vep = (data[3] == alt)
-        canonical_vep = (data[-4] == 'YES')
-        correct_gene = (data[-7] == gene)  # skip cases with antisense overlapping gene
-        if alt_vep and canonical_vep and correct_gene:
+        mane_vep = (data[-5] != '-') # impose mane transcript
+        correct_gene = (data[-9] == gene)  # skip cases with antisense overlapping gene
+        if alt_vep and mane_vep and correct_gene:
             exons = data[-2]
             if '/' in exons:
                 exon, total_exons = tuple(exons.split('/'))

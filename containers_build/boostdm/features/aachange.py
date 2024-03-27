@@ -11,9 +11,9 @@ def get_aachange(chr_, pos, alt, gene, reader):
 
     for data in reader.get(chr_, pos, pos):
         alt_vep = (data[3] == alt)
-        canonical_vep = (data[-4] == 'YES')
-        correct_gene = (data[-7] == gene) # skip cases with antisense overlapping gene (gene is gene_symbol)
-        if alt_vep and canonical_vep and correct_gene:
+        mane_vep = (data[-5] != '-') # impose MANE transcript
+        correct_gene = (data[-9] == gene) # skip cases with antisense overlapping gene (gene is gene_symbol)
+        if alt_vep and mane_vep and correct_gene:
             aas = data[11]  # [11] -> amino-acids involved in change ("I/T")
             aa_pos = data[10]  # [10] -> amino-acid position
             if '/' in aas:
