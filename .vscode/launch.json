@@ -1,0 +1,44 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CreateDatasets",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/containers_build/boostdm/annotations/cohort.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/tests/output",
+            "env": {
+                "GENOME_BUILD": "hg38",
+                "INTOGEN_DATASETS": "/workspace/projects/intogen_plus/fixdatasets-20230223/intogen-plus/run_20230224_ALL/intogen_analysis/",
+                "BOOSTDM_DIR": "/workspace/datasets/boostdm_runs/boostdm-cancer-output-2023",
+                "BOOSTDM_DATASETS": ""
+            },
+            "args": [
+                "--cohort",
+                "TCGA_WXS_BRCA",
+                "--dndscv-path",
+                "/workspace/projects/intogen_plus/fixdatasets-20230223/intogen-plus/run_20230224_ALL/intogen_analysis/steps/dndscv/TCGA_WXS_BRCA.dndscv.tsv.gz",
+                "--dndscv-annotmuts-path",
+                "/workspace/projects/intogen_plus/fixdatasets-20230223/intogen-plus/run_20230224_ALL/intogen_analysis/steps/dndscv/TCGA_WXS_BRCA.dndscv_annotmuts.tsv.gz",
+                "--mutrate-path", "/workspace/projects/intogen_plus/fixdatasets-20230223/intogen-plus/run_20230224_ALL/intogen_analysis/steps/boostDM/mutrate/TCGA_WXS_BRCA.mutrate.json",
+                "--clustl-group-path",
+                "/workspace/datasets/boostdm_runs/boostdm-cancer-output-2023/output_20230710/features_group/clustl.tsv.gz",
+                "--hotmaps-group-path",
+                "/workspace/datasets/boostdm_runs/boostdm-cancer-output-2023/output_20230710/features_group/hotmaps.tsv.gz",
+                "--smregions-group-path", 
+                "/workspace/datasets/boostdm_runs/boostdm-cancer-output-2023/output_20230710/features_group/smregions.tsv.gz",
+                "--splits",
+                "50", 
+                "--threshold",
+                "0.85",
+                "--out",
+                "TCGA_WXS_BRCA.regression_data.tsv"
+            ]
+        },
+    ]
+}
