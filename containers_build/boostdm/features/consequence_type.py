@@ -23,5 +23,5 @@ def add_feature(df):
 
     with Tabix(TABIX_FILE) as reader:
         get_from_reader = partial(get_csqn_type, reader=reader)
-        df['csqn_type'] = df.apply(lambda row: get_from_reader((str(row['chr']), int(row['pos']), row['alt'], row['gene'])), axis=1)
+        df['csqn_type'] = df.apply(lambda row: get_from_reader(str(row['chr']), int(row['pos']), row['alt'], row['gene']), axis=1)
     return df

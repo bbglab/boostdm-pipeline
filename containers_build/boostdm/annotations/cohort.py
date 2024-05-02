@@ -68,7 +68,7 @@ def retrieve_expectation(exp_dict, v):
 def set_string_chr(row):
     try:
         return str(int(row["chr"]))
-    except:
+    except ValueError:
         return str(row["chr"])
 
 
