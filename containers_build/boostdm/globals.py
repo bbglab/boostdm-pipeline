@@ -28,7 +28,10 @@ CONSEQUENCES_LIST = [
     'inframe_deletion',
     'missense_variant',
     'protein_altering_variant',
+    'splice_donor_5th_base_variant',
     'splice_region_variant',
+    'splice_donor_region_variant',
+    'splice_polypyrimidine_tract_variant',
     'incomplete_terminal_codon_variant',
     'start_retained_variant',
     'stop_retained_variant',
@@ -51,7 +54,8 @@ CONSEQUENCES_LIST = [
     'feature_elongation',
     'regulatory_region_variant',
     'feature_truncation',
-    'intergenic_variant'
+    'intergenic_variant',
+    'sequence_variant'
 ]
 
 CONSEQUENCES_DICT = {k: i for i, k in enumerate(CONSEQUENCES_LIST)}
