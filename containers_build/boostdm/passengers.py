@@ -15,7 +15,7 @@ import bgreference
 import numpy as np
 import pandas as pd
 
-from boostdm.globals import CANONICAL_TRANSCRIPTS_FILE, GENOME_BUILD
+from boostdm.globals import MANE_TRANSCRIPTS_FILE, GENOME_BUILD
 
 
 # Utils
@@ -32,7 +32,7 @@ CB = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 TRIPLETS = [p[0] + c + p[1] for c in ['C', 'T'] for p in itertools.product(CB.keys(), repeat=2)]
 CHANGES = {'C': ['A', 'G', 'T'], 'T': ['A', 'C', 'G']}
 
-cds_data = pd.read_csv(CANONICAL_TRANSCRIPTS_FILE,
+cds_data = pd.read_csv(MANE_TRANSCRIPTS_FILE,
                        sep='\t', header=None, compression='gzip', low_memory=False)
 cds_data = cds_data[[0, 1, 2, 3, 6]].copy()
 cds_data.columns = ['chr', 'start', 'end', 'strand', 'gene']

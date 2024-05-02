@@ -10,7 +10,7 @@ import tqdm
 
 from boostdm import BoostDMError
 from boostdm.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
-from boostdm.globals import CANONICAL_TRANSCRIPTS_FILE, MNVS_FILE, COHORTS_PATH, DRIVERS_PATH
+from boostdm.globals import MANE_TRANSCRIPTS_FILE, MNVS_FILE, COHORTS_PATH, DRIVERS_PATH
 from boostdm.oncotree import Oncotree
 from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions, dndscv
 from boostdm.passengers import retrieve_exons, randomize
@@ -149,16 +149,16 @@ def mnvs_to_remove():
 
 def retrieve_transcript():
 
-    """Returns dataframe with canonical transcript regions"""
+    """Returns dataframe with mane transcript regions (cds + 25bp for splicing)"""
 
-    canonical_transcript_df = pd.read_csv(CANONICAL_TRANSCRIPTS_FILE,
+    mane_transcript_df = pd.read_csv(MANE_TRANSCRIPTS_FILE,
                          sep='\t', header=None, compression='gzip', low_memory=False, skiprows=1)
 
     # TODO: verify the columns we are selecting are the right ones
     
-    canonical_transcript_df = canonical_transcript_df[[0, 1, 2, 6]].copy()
-    canonical_transcript_df.columns = ['chr', 'start', 'end', 'gene']
-    return canonical_transcript_df
+    mane_transcript_df = mane_transcript_df[[0, 1, 2, 6]].copy()
+    mane_transcript_df.columns = ['chr', 'start', 'end', 'gene']
+    return mane_transcript_df
 
 
 def intersect_region_mutations(cds, pos):
@@ -228,8 +228,8 @@ def initialize_trainset(df, drivers):
 
 def build_positive_set(df_expect):
 
-    canonical_transcript = retrieve_transcript()
-    pos = intersect_region_mutations(canonical_transcript, df_expect)
+    mane_transcript = retrieve_transcript()
+    pos = intersect_region_mutations(mane_transcript, df_expect)
     pos['response'] = 1
     return pos
 
