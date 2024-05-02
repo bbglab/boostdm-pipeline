@@ -12,7 +12,18 @@ from boostdm.globals import DISCOVERY_TIERS, MUTATION_TIERS, FSCORE_THRESHOLD
 
 
 def get_fscore(model_evaluation):
-    return np.nanmean(model_evaluation.get('fscore50', 0.5))
+
+    # Default F-score value assuming a uniform predictor with probability p = 0.5
+    # applied to a balanced dataset. This setting can be changed to comply with other assumptions.
+    
+    beta = 0.5
+    precision = 0.5
+    recall = 0.5
+    default_fscore = (1 + beta ** 2) * (precision * recall / (precision * beta ** 2 + recall))
+    
+    # otherwise compute the mean of the available F-scores
+
+    return np.nanmean(model_evaluation.get('fscore50', default_fscore))
 
 
 class Hierarchy:
@@ -35,6 +46,7 @@ class Hierarchy:
 
 
 def meet_condition(fscore, discovery, n_muts):
+
     if fscore >= FSCORE_THRESHOLD:
         for discovery_thresh, n_muts_thresh in zip(DISCOVERY_TIERS, MUTATION_TIERS):
             if (discovery >= discovery_thresh) and (n_muts >= n_muts_thresh):
