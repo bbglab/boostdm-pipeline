@@ -65,7 +65,6 @@ process PredictSaturation {
         path output into PREDICTION_SATURATION
 
     script:
-        output = "${gene}.${ttype}.prediction.tsv.gz"
         """
         runner.sh perform_predictions.py \
                 --muts ${input} \
@@ -74,7 +73,6 @@ process PredictSaturation {
                 --models-folder ${OUTPUT}/training_meta \
                 --evaluations-folder ${OUTPUT}/evaluation \
                 --model-selection ${model} \
-                --output-file ${output} \
                 --high-quality-only
         """
 }

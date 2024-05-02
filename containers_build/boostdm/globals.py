@@ -75,7 +75,6 @@ COLUMNS_TRAINING = [
 
 COLUMNS_OUTPUT = ['gene', 'ENSEMBL_TRANSCRIPT', 'ENSEMBL_GENE', 'chr', 'pos', 'alt', 'aachange'] + \
                  COLUMNS_TRAINING + \
-                 ['selected_model_ttype'] + \
                  ['boostDM_score', 'boostDM_class']
 
 COLUMNS_SHAP = [f'shap_{x}' for x in COLUMNS_TRAINING]
