@@ -12,7 +12,7 @@ MANE_TRANSCRIPTS_FILE = os.path.join(BOOSTDM_DATASETS, 'saturation', 'cds-25spli
 TABIX_FILE = os.path.join(BOOSTDM_DATASETS, 'shared', 'vep.tsv.gz')
 PTMS_FILE = os.path.join(BOOSTDM_DATASETS, 'ptms', 'info_functional_sites.json')
 PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'regions_pfam.tsv')
-ONCOTREE_PATH = os.path.join(BOOSTDM_DATASETS, 'shared', 'oncotree-tree.tsv')
+ONCOTREE_PATH = os.path.join(BOOSTDM_DATASETS, 'shared', 'tree.tsv')
 
 # Consequence list taken from: https://www.ensembl.org/info/genome/variation/prediction/predicted_data.html
 CONSEQUENCES_LIST = [
