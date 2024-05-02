@@ -68,6 +68,9 @@ AGGREGATION_DICT = {'synonymous_variant': 'synonymous',
                     'splice_donor_variant': 'splicing',
                     'splice_acceptor_variant': 'splicing',
                     'splice_region_variant': 'splicing',
+                    'splice_donor_5th_base_variant':'splicing',
+                    'splice_donor_region_variant':'splicing',
+                    'splice_polypyrimidine_tract_variant':'splicing',
                     'intron_variant': 'splicing'}
 
 COLUMNS_TRAINING = [
