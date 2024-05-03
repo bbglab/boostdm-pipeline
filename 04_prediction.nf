@@ -62,7 +62,7 @@ process PredictSaturation {
         path model from MODEL
 
     output:
-        path output into PREDICTION_SATURATION
+        path("*.tsv.gz") into PREDICTION_SATURATION
 
     script:
         """
