@@ -27,7 +27,7 @@ def read_muts(path_data):
                          'Canonical': 'CANONICAL'}, inplace=True)
 
 
-    muts = muts[muts['CANONICAL'] == 'YES']
+    muts = muts[muts['MANE_SELECT'] != '-']
     if muts.shape[0] == 0:
         raise Exception('There are not mutations in the canonical transcript')
 
