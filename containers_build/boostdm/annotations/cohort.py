@@ -294,6 +294,9 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     # positive set
     pos = build_positive_set(initial)
 
+    if len(pos) == 0:
+        raise BoostDMError('Run failed: positive set is empty')
+
     # negative set
 
     neg = add_passenger_mutations(pos, mutrate, n_splits)
