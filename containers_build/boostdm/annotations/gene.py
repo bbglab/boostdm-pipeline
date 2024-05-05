@@ -24,7 +24,8 @@ def read_muts(path_data):
                          'Feature': 'ENSEMBL_TRANSCRIPT',
                          'Consequence': 'csqn_type',
                          'Symbol': 'gene',
-                         'Canonical': 'CANONICAL'}, inplace=True)
+                         'Canonical': 'CANONICAL',
+                         'Mane_select': 'MANE_SELECT'}, inplace=True)
 
 
     muts = muts[muts['MANE_SELECT'] != '-']
