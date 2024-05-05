@@ -10,7 +10,7 @@ HOTMAPS_GROUP_V = HOTMAPS_GROUP.first()
 SMREGIONS_GROUP = Channel.fromPath("${OUTPUT}/features_group/smregions.tsv.gz")
 SMREGIONS_GROUP_V = SMREGIONS_GROUP.first()
 
-SPLITCV_OUT = Channel.fromPath("${OUTPUT}/splitcv_meta/*/*.models.pickle.gz")
+SPLITCV_OUT = Channel.fromPath("${OUTPUT}/splitcv_meta/*/*.cvdata.pickle.gz")
 GENE_TTYPE_OUT = SPLITCV_OUT.map{ it -> [it.baseName.split('\\.')[0], it.getParent().baseName]}
 
 
