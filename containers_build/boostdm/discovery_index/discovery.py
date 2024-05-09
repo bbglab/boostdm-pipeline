@@ -109,8 +109,8 @@ def discovery_index_with_bootstrap(samples, mutations, iterations=10, ngrid=10):
 
 def discovery_run(samples, mutations, iterations=100, ngrid=20):
 
-    np.random.seed(42)
-    random.seed(42)
+    np.random.seed(123)
+    random.seed(123)
 
     params_list, disc_ind, grid, unique_counts = discovery_index_with_bootstrap(samples, mutations, iterations, ngrid)
     median = np.nanmedian(disc_ind)
@@ -149,28 +149,24 @@ def cli(evaluation_path, mutations, samples, output):
         df_observed_ttype = df_mutations[df_mutations['COHORT'].isin(cohorts)]
         for gene in gene_ttype_iterable[ttype]:
             df_observed = df_observed_ttype[df_observed_ttype['gene'] == gene]
-            # TODO check length 0? Possible?
-            df_discovery_index['gene'].append(gene)
-            df_discovery_index['ttype'].append(ttype)
-            n_samples, n_unique, discovery, interquartile_range = discovery_run(samples_info[ttype], df_observed)
             n_muts = df_observed['sampleID'].count()
             try:
-                df_discovery_index['n_muts'].append(n_muts)
-                df_discovery_index['n_unique_muts'].append(n_unique)
-                df_discovery_index['n_samples'].append(n_samples)
-                df_discovery_index['discovery_index'].append(discovery)
-                df_discovery_index['discovery_high'].append(interquartile_range[1])
-                df_discovery_index['discovery_low'].append(interquartile_range[0])
-            except:
-                df_discovery_index['n_muts'].append(np.nan)
-                df_discovery_index['n_unique_muts'].append(np.nan)
-                df_discovery_index['n_samples'].append(np.nan)
-                df_discovery_index['discovery_index'].append(np.nan)
-                df_discovery_index['discovery_high'].append(np.nan)
-                df_discovery_index['discovery_low'].append(np.nan)
-
+                n_samples, n_unique, discovery, interquartile_range = discovery_run(samples_info[ttype], df_observed)
+            except Exception:
+                #TODO: implement a more consistent logging for failed cases?
+                print(f'Discovery index calculation failed for gene {gene}, tumor-type {ttype}')
+                continue
+            df_discovery_index['gene'].append(gene)
+            df_discovery_index['ttype'].append(ttype)
+            df_discovery_index['n_muts'].append(n_muts)
+            df_discovery_index['n_unique_muts'].append(n_unique)
+            df_discovery_index['n_samples'].append(int(n_samples))
+            df_discovery_index['discovery_index'].append(discovery)
+            df_discovery_index['discovery_high'].append(interquartile_range[1])
+            df_discovery_index['discovery_low'].append(interquartile_range[0])
+        
     df_discovery_index = pd.DataFrame(df_discovery_index)
-    df_discovery_index = df_discovery_index[~df_discovery_index.isnull()]
+    # df_discovery_index = df_discovery_index[~df_discovery_index.isnull()]
     df_discovery_index.to_csv(output, sep='\t', index=False, compression='gzip')
 
 
