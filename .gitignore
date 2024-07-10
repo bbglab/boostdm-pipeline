@@ -199,3 +199,8 @@ _trash
 # test directory
 tests/output
 database
+
+# testing
+*FAILED.txt
+scan_errors.sh
+*_test.nf
