@@ -8,7 +8,7 @@ COHORTS_PATH = os.path.join(INTOGEN_DATASETS, 'cohorts.tsv')
 DRIVERS_PATH = os.path.join(INTOGEN_DATASETS, 'drivers.tsv')
 PHYLOP_FILE = os.path.join(BOOSTDM_DATASETS, 'hg38.phyloP100way.bw')
 MNVS_FILE = os.path.join(INTOGEN_DATASETS, 'steps', 'boostDM', 'mnvs.tsv.gz')
-MANE_TRANSCRIPTS_FILE = os.path.join(BOOSTDM_DATASETS, 'saturation', 'cds-25spli.regions.gz')
+MANE_TRANSCRIPTS_FILE = os.path.join(BOOSTDM_DATASETS, 'saturation', 'cds-5spli.regions.gz')
 TABIX_FILE = os.path.join(BOOSTDM_DATASETS, 'shared', 'vep.tsv.gz')
 PTMS_FILE = os.path.join(BOOSTDM_DATASETS, 'ptms', 'info_functional_sites.json')
 PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'regions_pfam.tsv')
@@ -71,10 +71,11 @@ AGGREGATION_DICT = {'synonymous_variant': 'synonymous',
                     'splice_donor_5th_base_variant':'splicing',
                     'splice_donor_region_variant':'splicing',
                     'splice_polypyrimidine_tract_variant':'splicing',
-                    'intron_variant': 'splicing'}
+                    'intron_variant': 'splicing'}  # TODO: is "intron_variant" necessary?
 
 COLUMNS_TRAINING = [
-        'CLUSTL', 'HotMaps', 'smRegions', 'PhyloP',
+        'CLUSTL', 'HotMaps', 'smRegions', 
+        'PhyloP',
         'nmd', 
         'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination',
         'csqn_type_missense', 'csqn_type_nonsense', 'csqn_type_splicing', 'csqn_type_synonymous'
