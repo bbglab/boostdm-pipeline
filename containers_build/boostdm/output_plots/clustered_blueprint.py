@@ -23,17 +23,17 @@ from scipy.cluster.hierarchy import fcluster, cophenet
 import scipy.cluster.hierarchy as hierarchy
 from scipy.cluster.hierarchy import dendrogram
 
+from boostdm import BoostDMError
+
 
 saturation_folder = os.path.join(os.environ['OUTPUT'], 'saturation', 'prediction')
-
-cohorts = pd.read_csv(os.path.join(os.environ['INTOGEN_DATASETS'], 'cohorts.tsv'), sep='\t')
-cohort_ttypes = cohorts['CANCER_TYPE'].unique()
 
 
 def get_aa_position(aachange):
     
     digit = re.findall(r'\d+', aachange)[0]
     return int(digit)
+
 
 def create_saturation_vectors():
 
@@ -99,56 +99,76 @@ def mcc_dist(x, y):
     return max(1 - mcc_score(x, y), 0)
 
 
-# clustering options
+def clustered_blueprints(gene, saturation_vectors, df_pfam, df_names):
 
+    # create dataframe object with rows binary vector of aa positions indexed by tumor type
 
-def config_params(font_size=10):
-
-    mpl.rcParams.update(mpl.rcParamsDefault)
-    plt.rcParams['font.sans-serif'] = ['arial']
-    plt.rcParams['font.size'] = font_size
-    plt.rcParams['font.family'] = ['sans-serif']
-    plt.rcParams['svg.fonttype'] = 'none'
-    plt.rcParams['mathtext.fontset'] = 'custom'
-    plt.rcParams['mathtext.cal'] = 'arial'
-    plt.rcParams['mathtext.rm'] = 'arial'
-
-
-def round_low(x):
+    subdict = {}
+    for tt, g in saturation_vectors:
+        if g == gene:
+            subdict[(tt, gene)] = saturation_vectors[(tt, gene)]
     
-    y = abs(x - np.round(x, 3))
-    return x - y
+    if len(subdict) == 0:
+        raise BoostDMError(f'No blueprint for gene={gene}')
 
+    l_data, l_ttype = [], []
+    for (ttype, gene), v in subdict.items():        
+        l_data.append(list(v))
+        l_ttype.append(ttype)
 
-def plot_cluster_domains_kde(df, df_pfam, df_names, gene, output='./', dpi=150, invisible_heatmap=False, plot=True):
-    
+    df = pd.DataFrame(l_data)
+    df.fillna(0.0, inplace=True)
+    df.index = l_ttype
+
+    # define the main data: X driver mutations, Y distance matrix
+
     X = df.values
     Y = pdist(X, metric=mcc_dist)
 
-    if len(X) > 1:
-        linkage = hierarchy.linkage(Y, method='ward')
+    # define the plot environment with 4 axes
     
+    if X.shape[0] > 20:
+
+        fig_height = 6 + int(0.1 * X.shape[0])    
+        fig = plt.figure(figsize=(13, fig_height))
+        gs = gridspec.GridSpec(figure=fig, ncols=2, nrows=2, width_ratios=[15,1], height_ratios=[1,20])
+        gs.update(hspace=0.05, wspace=0.00)
+
+    elif X.shape[0] > 4:
+        
+        fig_height = 6 + int(0.1 * X.shape[0])    
+        fig = plt.figure(figsize=(13, fig_height))
+        gs = gridspec.GridSpec(figure=fig, ncols=2, nrows=2, width_ratios=[15,1], height_ratios=[1,13])
+        gs.update(hspace=0.05, wspace=0.00)
     
-    if gene == 'TP53':
-        figsize = (13, 8)
+    elif X.shape[0] > 1:
+
+        fig_height = 3 + int(0.1 * X.shape[0])    
+        fig = plt.figure(figsize=(13, fig_height))
+        gs = gridspec.GridSpec(figure=fig, ncols=2, nrows=2, width_ratios=[15,1], height_ratios=[1,8])
+        gs.update(hspace=0.05, wspace=0.00)
+
     else:
-        figsize = (13, 6)
+
+        fig_height = 2 + int(0.1 * X.shape[0])    
+        fig = plt.figure(figsize=(13, fig_height))
+        gs = gridspec.GridSpec(figure=fig, ncols=2, nrows=2, width_ratios=[15,1], height_ratios=[1,4])
+        gs.update(hspace=0.05, wspace=0.00)
+
     
-    fig, ax = plt.subplots(figsize=figsize)
+    ax0 = fig.add_subplot(gs[0])  # top-left: axis for domains
+    ax1 = fig.add_subplot(gs[1])  # top-right: not used
+    ax2 = fig.add_subplot(gs[2])  # bottom-left: blueprint tracks
+    ax3 = fig.add_subplot(gs[3])  # bottom-right: dendrogram
+
+    # perform hierarchical clustering with binary dataframe using MCC as distance
+
+    X = df.values
+    Y = pdist(X, metric=mcc_dist)
     
-    gs = gridspec.GridSpec(figure=fig, ncols=2, nrows=2, width_ratios=[15,1], height_ratios=[1,16])
-    gs.update(hspace=0.05, wspace=0.00)
-    ax0 = plt.subplot(gs[0]) # counts_muts
-    ax1 = plt.subplot(gs[1]) # null
-    ax2 = plt.subplot(gs[2]) # heatmap
-    ax3 = plt.subplot(gs[3]) # right dendogram
-        
-    # plot dendrogram and display cophenetic distances in ax3
-    
-    ax3.axis('off')
-    
-    if len(X) > 1:
-        
+    if X.shape[0] > 1:
+
+        linkage = hierarchy.linkage(Y, method='ward')
         ddgram = dendrogram(linkage, truncate_mode=None,
                             labels=df.index,
                             color_threshold=0,
@@ -156,31 +176,21 @@ def plot_cluster_domains_kde(df, df_pfam, df_names, gene, output='./', dpi=150, 
                             orientation="right",
                             get_leaves=True,
                             no_plot=False, ax=ax3)
-        
-        # capture spread of y-values of dendrogram to adjust later
-        
-        pool = []
-        for item in ddgram['icoord']:
-            pool += item
-        min_ = min(pool)
-        max_ = max(pool)
-        
-        coph_diam = round_low(ddgram['dcoord'][-1][1])
-    
-    # Draw domains
+                        
+    ax3.axis('off')  # removes the names of the leaves in the dendrogram
+
+    # draw Pfam domains
 
     ax1.axis('off')
     ax0.axis('off')
     
     ax0.axhline(y=0.0, xmin=0, xmax=df.shape[1], ls="-", lw=2,color="black", alpha=0.5, zorder=1)
     
-    fontsize = 7
-
     if df_pfam[df_pfam['SYMBOL'] == gene].shape[0] > 0:
         
         dg_pfam = get_PFAMs_per_transcript(gene, df_pfam, df_names)
 
-        for i, r in dg_pfam.sort_values(by='START').iterrows():
+        for i, r in dg_pfam.sort_values(by='START').reset_index().iterrows():
             
             start_base = r['START']
             size_base = r['SIZE']
@@ -188,22 +198,57 @@ def plot_cluster_domains_kde(df, df_pfam, df_names, gene, output='./', dpi=150, 
             rect1 = patches.Rectangle(xy=(start_base, -1), width=size_base, 
                                         height=10, color="#90EE90", alpha=1, 
                                         clip_on=True, zorder=10)
+                                        
             rect2 = patches.Rectangle(xy=(start_base, -1), width=size_base, 
                                         height=10, color="black", fill=None, alpha=1, 
                                         clip_on=True, zorder=10, linewidth=0.5)
             ax0.add_patch(rect1)
             ax0.add_patch(rect2)
 
-            ax0.annotate(r["DOMAIN_NAME"], xy=(start_base + 2, 1), fontsize=fontsize, zorder=10)
+            # write Pfam domain labels
+
+            if gene in ['ARID2', 'ARHGAP35', 'AXIN1', 'BCL9L', 'BRCA1', 'CDH1', 'CTCF', \
+                        'EZH2', 'FUBP1', 'KDM6A', 'PBRM1', 'RBM10', 'RNF43', 'SMARCA4', \
+                        'WT1',  'XPO1']:
+                y_min, y_max = -30, 70
+                gap = y_max - y_min
+                levels = [y_min, 
+                          y_min + 0.4 * gap, 
+                          y_min + 0.7 * gap, 
+                          y_min + 1 * gap]
+                ax0.annotate(r["DOMAIN_NAME"], xy=(start_base + 2, levels[i % 4]), fontsize=7, zorder=10, rotation=0)
+                ax0.set_ylim(y_min, y_max)
+            
+            elif X.shape[1] < 2000:
+                ax0.annotate(r["DOMAIN_NAME"], xy=(start_base + 2, 1), fontsize=7, zorder=10)
+                ax0.set_ylim(-10, 10)
+            else:
+                y_min, y_max = -30, 70
+                gap = y_max - y_min
+                levels = [y_min, 
+                          y_min + 0.4 * gap, 
+                          y_min + 0.7 * gap, 
+                          y_min + 1 * gap]
+                ax0.annotate(r["DOMAIN_NAME"], xy=(start_base + 2, levels[i % 4]), fontsize=7, zorder=10, rotation=0)
+                ax0.set_ylim(y_min, y_max)
 
             ax0.set_xlim(0, df.shape[1] + 50)
-            ax0.set_ylim(-10, 10)
-    
-    # Heatmap
+
+    # draw blueprints
+
+    # gets the spread of the dendrogram
+
+    if X.shape[0] > 1:
+        pool = []
+        for item in ddgram['icoord']:
+            pool += item
+        min_, max_ = min(pool), max(pool)
+    else:
+        min_, max_ = None, None
     
     y_values, x_values = [], []
     
-    if len(X) > 1:
+    if X.shape[0] > 1:
         values = df.loc[ddgram["ivl"][::-1]].values
         scaling_factor = (max_ - min_) / (len(X) - 1)
     else:
@@ -218,106 +263,65 @@ def plot_cluster_domains_kde(df, df_pfam, df_names, gene, output='./', dpi=150, 
                 y_values.append(max_ + j * scaling_factor)
                 x_values.append(v)
         j-=1
-    
-    eps = 0.05
-    ax2.scatter(x_values, [y + np.random.uniform(-eps, eps) for y in y_values], color="#cc0000", s=1., alpha=0.5)
 
-    # separating horizontal lines
+    # add jitter to y_values
+
+    if X.shape[0] > 6:
+        sigma_jitter = 0.75
+    elif X.shape[0] > 1:
+        sigma_jitter = 0.15
+    else:
+        sigma_jitter = 0.025
+
+    y_values = np.array(y_values) + np.random.normal(0, sigma_jitter, size=len(y_values))
+
+    ax2.scatter(x_values, y_values, color="#cc0000", s=1., alpha=0.5)
     
+    # aminoacid positions
+
+    len_aa = df.shape[1]
+    ax2.set_xticks([x for x in np.linspace(0, len_aa, num=10, endpoint=True)])
+    ax2.set_xticklabels([str(int(x)) for x in np.linspace(0, len_aa, num=10, endpoint=True)])    
     ax2.spines['right'].set_visible(False)
     ax2.spines['top'].set_visible(False)
     ax2.spines['left'].set_visible(False)
     ax2.set_xlabel("Amino acid position",fontsize=12)
     ax2.set_ylabel("Tumor type",fontsize=12, rotation=90)
-    
-    if len(X) > 1:
-        # labels = [str(ttype) for ttype in ddgram["ivl"][::-1]]
-        labels = [str(ttype) for ttype in ddgram["ivl"]]
 
+    # tumor type labels
+
+    if X.shape[0] > 1:
+        labels = [str(ttype) for ttype in ddgram["ivl"]]
     else:
         labels = [str(ttype) for ttype in df.index]
-    
-    # len_cds = (df.columns.values[-1] + 1)
-    len_cds = df.shape[1]
-    len_aa =  len_cds
 
-    ax2.set_xticks([x for x in np.linspace(0, len_cds, num=10, endpoint=True)])
-    ax2.set_xticklabels([str(int(x)) for x in np.linspace(0, len_aa, num=10, endpoint=True)])
-    
-    if len(X) > 1:
+
+    if X.shape[0] > 1:
         _ = ax2.set_yticks(np.linspace(min_, stop=max_, num=len(labels)))
-        _ = ax2.set_yticklabels(labels, rotation=0, fontsize=10)
-        h = ax2.hlines(np.linspace(min_, stop=max_, num=len(labels)), xmin=0, xmax=len_cds, alpha=0.3)
+        _ = ax2.set_yticklabels(labels, rotation=0, fontsize=7)
+        h = ax2.hlines(np.linspace(min_, stop=max_, num=len(labels)), xmin=0, xmax=len_aa, alpha=0.3)
     else:
         _ = ax2.set_yticks(np.linspace(0, stop=len(X)+1, num=len(labels)))
-        _ = ax2.set_yticklabels(labels, rotation=0, fontsize=10)
-        h = ax2.hlines(np.linspace(0, stop=len(X)+1, num=len(labels)), xmin=0, xmax=len_cds, alpha=0.3)
+        _ = ax2.set_yticklabels(labels, rotation=0, fontsize=7)
+        h = ax2.hlines(np.linspace(0, stop=len(X)+1, num=len(labels)), xmin=0, xmax=len_aa, alpha=0.3)
+    
     h.set_linewidth(0.5)
-    
-    ax2.set_xlim(0, len_cds)
 
-    if gene == "TP53":
-        ax2.tick_params(axis='y', labelsize=8.5, pad=0.25, width=0.5, length=1.5)
-    else:
-        ax2.tick_params(axis='both', labelsize=10, pad=0.25, width=0.5, length=1.5)
-    
-    if invisible_heatmap:
-        ax2.set_visible(False)
-     
-    title = f'{gene}'
-    ax0.set_title(title, fontsize=14)
-    
-    if len(X) > 1:
+    # embellishments
+
+    ax2.set_xlim(0, len_aa)
+    ax2.tick_params(axis='both', labelsize=10, pad=0.25, width=0.5, length=1.5)
+
+    if X.shape[0] > 1:
         ax3.set_ylim(ax2.get_ylim())
     else:
         ax2.set_ylim(-0.5, 0.5)
-    
-    plt.savefig(f'{gene}.clustered_blueprint.png', dpi=dpi, bbox_inches='tight')
-    plt.savefig(f'{gene}.clustered_blueprint.svg', dpi=dpi, bbox_inches='tight')
 
-    if not plot:
-        plt.close(fig)
-    
+    fig.suptitle(gene, fontsize=14)
 
-def create_saturation_table_reformat(pair_vectors):
-    
-    """
-    pair_vectors: type (ttype, gene): array-like
-    all genes are supposed to be the same
-    """
-    
-    l_data = []
-    l_ttype = []
-    l_model = []
-    
-    for (ttype, gene), v in pair_vectors.items():
-        
-        l_data.append(list(v))
-        l_ttype.append(ttype)
-
-    df = pd.DataFrame(l_data)
-    df.fillna(0.0, inplace=True)
-    df.index = l_ttype
-    return df
-
-
-def plot_clustering_reformat(gene, df_pfam, df_names, output, res, plot=False, dpi=150, invisible_heatmap=False):
-    
-    """res: type (ttype, gene): (array-like, array-like)"""
-    
-    pair_vectors = {}
-    
-    for tt, g in res:
-        if (g == gene) and (tt in cohort_ttypes):
-            pair_vectors[(tt, gene)] = res[(tt, gene)]
-    
-    if len(pair_vectors) == 0:
-        raise ValueError(f'{gene} does not have any blueprints')
-    
-    if len(pair_vectors) > 0:
-        df = create_saturation_table_reformat(pair_vectors)
-        x = plot_cluster_domains_kde(df, df_pfam, df_names, gene, plot=plot, output=output, dpi=dpi, invisible_heatmap=invisible_heatmap)
-
+    plt.savefig(f'{gene}.clustered_blueprint.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{gene}.clustered_blueprint.svg', dpi=300, bbox_inches='tight')
+    plt.close()
 
 
 @click.command()
@@ -341,8 +345,8 @@ def cli():
 
     for gene in tqdm.tqdm(driver_genes):
         try:
-            plot_clustering_reformat(gene, df_pfam, df_names, './', saturation_vectors, dpi=300, plot=False)
-        except ValueError as e:
+            clustered_blueprints(gene, saturation_vectors, df_pfam, df_names)
+        except BoostDMError as e:
             print(e)
     
     return
