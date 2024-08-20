@@ -210,7 +210,7 @@ def plot_gene_full_nucleotide(data, transcript, sat_pred, ax0, all_possible=Fals
     ax0.scatter(passenger_x, passenger_y, s=size, c=passenger_color, alpha=0.7, label='non-driver')
     ax0.scatter(driver_x, driver_y, s=size, c=driver_color, alpha=0.7, label='driver')
 
-    leg = ax0.legend(loc='upper left', prop=dict(size=6))
+    leg = ax0.legend(loc=(0, 1.15), prop=dict(size=6))
     leg.get_frame().set_linewidth(0.0)
 
     ax0.set_xlim(0, max(sat_pred['Protein_position']))
@@ -379,15 +379,15 @@ def tracked_blueprint_all(gene, ttype_model, ttype_features, df_codon, df, sat_p
         
         with gzip.open(fn, 'rb') as f:
             l = pickle.load(f)
-        Fscore50 = round(np.nanmean(l['fscore50']),2)
+        Fscore50 = round(np.nanmean(l['fscore50']), 2)
 
         df_DI = pd.read_csv(os.path.join(os.environ['OUTPUT'], 'discovery', 'discovery.tsv.gz'), sep='\t')
         DiscoveryI = round(df_DI[(df_DI['gene']==gene) & (df_DI['ttype']==ttype_model)]['discovery_index'].iloc[0], 2)
 
         ax0.set_title(
-            f'{gene} ({ttype_model}-{ttype_features}) \n' \
-            f'Observed mutations and features in {ttype_features} (n_muts={str(len(df))})\n' \
-            f'{ttype_model} model (F-score50={str(Fscore50)}; discovery index={str(DiscoveryI)})', fontsize=10)
+            f'{gene} ({ttype_model}) \n' \
+            f'{ttype_model} model (F-score50={str(Fscore50)}, discovery={str(DiscoveryI)})\n' \
+            f'{ttype_model} mutations and features (n={str(len(df))})\n', fontsize=10, y=1.25)
 
         fn_svg = os.path.join(f'{gene}.model.{ttype_model}.features.{ttype_features}.svg')
         fn_png = os.path.join(f'{gene}.model.{ttype_model}.features.{ttype_features}.png')
