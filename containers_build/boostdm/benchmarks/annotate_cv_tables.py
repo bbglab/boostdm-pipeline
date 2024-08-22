@@ -61,7 +61,7 @@ def cli():
         sat_annot = pd.read_csv(sat_annot_fn, sep='\t', low_memory=False)
         sat_annot['chr'] = sat_annot['chr'].astype(str)
 
-        cv_annot = pd.merge(cv_annot, sat_annot[['chr', 'pos', 'alt'] + all_dbnsfp_scores], on=['chr', 'pos', 'alt'], how='left')
+        cv_annot = pd.merge(cv_annot, sat_annot[['chr', 'pos', 'alt'] + all_dbnsfp_scores + ['aachange']], on=['chr', 'pos', 'alt'], how='left')
         cv_annot.to_csv(f'{gene}.{ttype}.50.iter.annotated.tsv', sep='\t', index=False)
 
 
