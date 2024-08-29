@@ -1,23 +1,31 @@
-import json
-import tqdm
-import glob
-import os
-import click
-import random
+import sys
 
-import pandas as pd
+import random
+from functools import reduce
+import operator
+
 import numpy as np
 from scipy.optimize import minimize
 
 from boostdm.oncotree import Oncotree
 
 
+def get_mutations(mutations, ttype, gene):
+
+    tree = Oncotree()
+    cohorts = tree.get_cohorts(ttype)
+    df = mutations[(mutations['COHORT'].isin(cohorts)) & (mutations['gene'] == gene)]
+    df['chr'] = df['chr'].astype(str)
+    df['pos'] = df['pos'].astype(int)
+    return df
+
+
 def get_downsampling_counts(samples_info, df_observed, iterations=10, n_grid=10):
     """
-    returns:
-    - grid: list of values, representing number of samples from which unique counts are drawn
-    - unique_counts: list of unique count set sizes for various replicates; each set has n=iterations elements
-      the list has same length as n_grid
+    :returns:
+    grid: list of values, representing number of samples from which unique counts are drawn
+    unique_counts: list of unique count set sizes for various replicates; each set has n=iterations elements
+    the list has same length as n_grid
     """
 
     n = len(samples_info)
@@ -60,12 +68,14 @@ def master_func(x, m, p):
 
 def discovery_index(total_samples, *params):
     """how far best fitting curve plateaus from current level unique mutations discovered"""
+
     m = params[0]
     a = master_func(total_samples, *params) / m
     return min(a, 1)
 
 
 def bootstrap_data(unique_counts, iterations=10, ngrid=7):
+
     y_data_bootstrap = []
     for _ in range(iterations):
         y_sample = []
@@ -77,6 +87,7 @@ def bootstrap_data(unique_counts, iterations=10, ngrid=7):
 
 
 def fitting_with_bootstrap(grid, unique_counts, iterations=10, ngrid=7):
+
     params_pool = []
     y_data_bootstrap = bootstrap_data(unique_counts, iterations=iterations, ngrid=ngrid)
 
@@ -101,16 +112,23 @@ def fitting_with_bootstrap(grid, unique_counts, iterations=10, ngrid=7):
 
 
 def discovery_index_with_bootstrap(samples, mutations, iterations=10, ngrid=10):
-    grid, unique_counts = get_downsampling_counts(samples, mutations,
-                                                  iterations=iterations, n_grid=ngrid)
+
+    np.random.seed(42)
+    random.seed(42)
+
+    grid, unique_counts = get_downsampling_counts(samples, mutations, iterations=iterations, n_grid=ngrid)
     params, disc_ind = fitting_with_bootstrap(grid, unique_counts, iterations=iterations, ngrid=ngrid)
     return params, disc_ind, grid, unique_counts
 
 
-def discovery_run(samples, mutations, iterations=100, ngrid=20):
-
-    np.random.seed(123)
-    random.seed(123)
+def discovery_run(samples, mutations, iterations=20, ngrid=20):
+    """
+    :return:
+        no. samples
+        no. total of unique mutations
+        median discovery index
+        interquartile range discovery index
+    """
 
     params_list, disc_ind, grid, unique_counts = discovery_index_with_bootstrap(samples, mutations, iterations, ngrid)
     median = np.nanmedian(disc_ind)
@@ -118,57 +136,63 @@ def discovery_run(samples, mutations, iterations=100, ngrid=20):
     return grid[-1], unique_counts[-1][-1], median, interquartile_range
 
 
-@click.command()
-@click.option('--evaluation-path', type=str)
-@click.option('--mutations', type=click.Path(exists=True), required=True)
-@click.option('--samples', type=click.Path(exists=True), required=True)
-@click.option('--output', type=str)
-def cli(evaluation_path, mutations, samples, output):
+def plot_fit(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, color_scatter='grey', color_curve='darkred', title=None):
+    
+    np.random.seed(42)
+    random.seed(42)
 
-    tree = Oncotree()
+    samp = samples[ttype]
+    muts = get_mutations(mutations, ttype, gene)
 
-    df_discovery_index = {'gene': [], 'ttype': [], 'n_muts': [], 'n_unique_muts': [],
-                          'n_samples': [], 'discovery_index': [], 'discovery_high': [], 'discovery_low': []}
+    params, disc, grid, unique_counts = discovery_index_with_bootstrap(samp, muts, iterations, ngrid)
 
-    df_mutations = pd.read_csv(mutations, sep='\t')
-    with open(samples, 'r') as fd:
-        samples_info = json.load(fd)
+    unique_np = np.array(unique_counts)
 
-    gene_ttype_iterable = {}
-    file_iterable = list(glob.glob(os.path.join(evaluation_path, '*/*.eval.pickle.gz')))
+    for i in range(iterations):
+        if i == 0:
+            ax.scatter(grid, unique_np[:, i], color=color_scatter, s=5, alpha=0.07)
+        else:
+            ax.scatter(grid, unique_np[:, i], color=color_scatter, s=5, alpha=0.07)
 
-    for fn in file_iterable:
-        gene = os.path.basename(fn).split('.')[0]
-        ttype = os.path.basename(os.path.dirname(fn))
-        gene_ttype_iterable[ttype] = gene_ttype_iterable.get(ttype, []) + [gene]
+    x = np.linspace(0, grid[-1], num=50)
+    y_mean = list(map(np.nanmean, zip(*map(lambda p: [master_func(s, *p) for s in x], params))))
+    score = np.round(np.nanmedian(disc), 2)
+    
+    assert(score != np.nan)
+    
+    ax.plot(x, y_mean, alpha=1, color=color_curve, label=f'{ttype}: discovery={score}')
 
-    for ttype in tqdm.tqdm(gene_ttype_iterable):
-        if ttype not in samples_info:
-            continue
-        cohorts = tree.get_cohorts(ttype)
-        df_observed_ttype = df_mutations[df_mutations['COHORT'].isin(cohorts)]
-        for gene in gene_ttype_iterable[ttype]:
-            df_observed = df_observed_ttype[df_observed_ttype['gene'] == gene]
-            n_muts = df_observed['sampleID'].count()
-            try:
-                n_samples, n_unique, discovery, interquartile_range = discovery_run(samples_info[ttype], df_observed)
-            except Exception:
-                #TODO: implement a more consistent logging for failed cases?
-                print(f'Discovery index calculation failed for gene {gene}, tumor-type {ttype}')
-                continue
-            df_discovery_index['gene'].append(gene)
-            df_discovery_index['ttype'].append(ttype)
-            df_discovery_index['n_muts'].append(n_muts)
-            df_discovery_index['n_unique_muts'].append(n_unique)
-            df_discovery_index['n_samples'].append(int(n_samples))
-            df_discovery_index['discovery_index'].append(discovery)
-            df_discovery_index['discovery_high'].append(interquartile_range[1])
-            df_discovery_index['discovery_low'].append(interquartile_range[0])
-        
-    df_discovery_index = pd.DataFrame(df_discovery_index)
-    # df_discovery_index = df_discovery_index[~df_discovery_index.isnull()]
-    df_discovery_index.to_csv(output, sep='\t', index=False, compression='gzip')
+    ax.set_xlabel('no. samples')
+    ax.set_ylabel('no. unique mutations')
+    if title is None:
+            title = f'Mutation Downsampling\n{gene} ({ttype})'
+    
+    ax.set_title(title)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
 
-if __name__ == '__main__':
-    cli()
+def plot_fit_multiple(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, color_curve='darkred', title=None):
+    
+    np.random.seed(42)
+    random.seed(42)
+
+    samp = samples[ttype]
+    muts = get_mutations(mutations, ttype, gene)
+
+    params, disc, grid, unique_counts = discovery_index_with_bootstrap(samp, muts, iterations, ngrid)
+
+    unique_np = np.array(unique_counts)
+
+    x = np.linspace(0, grid[-1], num=50)
+    y_mean = list(map(np.nanmean, zip(*map(lambda p: [master_func(s, *p) for s in x], params))))
+    score = np.round(np.median(disc), 2)
+    ax.plot(x, y_mean, alpha=0.8, lw=3, color=color_curve, label=f'{ttype}: discovery={score}')
+    ax.scatter([x[-1]], [y_mean[-1]], s=50, color=color_curve, alpha=0.8)
+    ax.set_xlabel('no. samples')
+    ax.set_ylabel('no. unique mutations')
+    if title is None:
+        title = f'Mutation Downsampling\n{gene} ({ttype})'
+    ax.set_title(title)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)

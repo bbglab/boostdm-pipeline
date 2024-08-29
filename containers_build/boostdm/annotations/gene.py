@@ -3,9 +3,9 @@ import pandas as pd
 
 pd.set_option('display.max_columns', 500)
 
-from boostdm.globals import DRIVERS_PATH, COHORTS_PATH
+from boostdm.globals import DRIVERS_PATH
 from boostdm.oncotree import Oncotree
-from boostdm.annotations.utils import encoding, rectify_synonymous, rectify_missense, rectify_splicing
+from boostdm.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
 from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions
 
 
@@ -24,10 +24,11 @@ def read_muts(path_data):
                          'Feature': 'ENSEMBL_TRANSCRIPT',
                          'Consequence': 'csqn_type',
                          'Symbol': 'gene',
-                         'Canonical': 'CANONICAL'}, inplace=True)
+                         'Canonical': 'CANONICAL',
+                         'Mane_select': 'MANE_SELECT'}, inplace=True)
 
 
-    muts = muts[muts['CANONICAL'] == 'YES']
+    muts = muts[muts['MANE_SELECT'] != '-']
     if muts.shape[0] == 0:
         raise Exception('There are not mutations in the canonical transcript')
 
@@ -87,7 +88,6 @@ def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
     tree = Oncotree()
     related_ttypes = list(iter_tree(tree, ttype))
 
-
     # Add linear clusters
     clustl_global_data = pd.read_csv(clustl_path, sep='\t')
     clustl_cancer_data = clustl_global_data[clustl_global_data['CANCER_TYPE'].isin(related_ttypes)]
@@ -115,19 +115,19 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
     # read mutations from the VEP output
     muts = read_muts(mutations_file)
 
+    # Reset index
+    muts.reset_index(drop=True, inplace=True)
+
     # annotate mutations
-    mut_features = features(muts, tumor, path_clustl, path_hotmaps, path_smregions)
+    df = features(muts, tumor, path_clustl, path_hotmaps, path_smregions)
 
     # keep mutations with specified consequence type
-    mut_features = mut_features[mut_features['csqn_type'].isin(['synonymous', 'missense', 'nonsense', 'splicing'])]
+    df = df[df['csqn_type'].isin(['synonymous', 'missense', 'nonsense', 'splicing'])]
 
-    if mut_features.shape[0] == 0:
+    if df.shape[0] == 0:
         raise Exception("There are not 'synonymous', 'missense', 'nonsense', or 'splicing' mutations")
 
-    # enconde the mutations
-    df = encoding(mut_features)
-
-    # rectify
+    df = encode_consequence_type(df)
     df = rectify_synonymous(df)
     df = rectify_missense(df)
     df = rectify_splicing(df)
@@ -149,10 +149,6 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
 def cli(gene, ttype, mutations, clustl_group, hotmaps_group, smregions_group):
     df = build_table(mutations, ttype, clustl_group, hotmaps_group, smregions_group)
     df.to_csv(f'{gene}.{ttype}.annotated.tsv.gz', sep='\t', index=False, compression="gzip")
-
-    # for testing only:
-    # df = pd.DataFrame([])
-    # df.to_csv(f'{gene}.{ttype}.annotated.tsv.gz', sep='\t', index=False, compression="gzip")
 
 
 if __name__ == '__main__':

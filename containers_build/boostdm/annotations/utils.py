@@ -1,47 +1,48 @@
 
-from boostdm.regression_utils import encode_cluster, encode_consequence_type
+import pandas as pd
 
 
-def encoding(df):
-    """encoding categorical features for gradient boosting to handle them"""
-    df = encode_consequence_type(df, 'csqn_type')
-    df = encode_cluster(df, 'CLUSTL_cat')
-    df = encode_cluster(df, 'HotMaps_cat')
-    df = encode_cluster(df, 'smRegions_cat')
-    return df
+csqn_type_list = ['missense', 'nonsense', 'splicing', 'synonymous']
+
+
+def encode_consequence_type(data):
+
+    data.loc[~data['csqn_type'].isin(csqn_type_list), 'csqn_type'] = 'none'
+    one_hot = pd.get_dummies(data, columns=['csqn_type'], prefix_sep='_')
+    one_hot.drop(columns=['csqn_type_none'], inplace=True, errors='ignore')
+    for c in csqn_type_list:
+        col = f'csqn_type_{c}'
+        if col not in list(one_hot.columns):
+            one_hot[col] = 0
+    return one_hot
 
 
 def rectify_synonymous(df):
 
-    dg = df.copy()
-    ind = dg[dg['csqn_type_synonymous'] == 1].index
-    forbidden = ['CLUSTL_SCORE', 'CLUSTL_cat_1', 'CLUSTL_cat_2',
-                 'HotMaps_cat_1', 'HotMaps_cat_2',
-                 'smRegions_cat_1', 'smRegions_cat_2',
-                 'nmd',
-                 'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination']
+    ind = df.index[df['csqn_type_synonymous'] == 1].tolist()
+    forbidden = [
+        'CLUSTL', 'HotMaps', 'smRegions',
+        'nmd',
+        'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination'
+        ]
     for c in forbidden:
-        dg.loc[ind, c] = 0
-    return dg
+        df.loc[ind, c] = 0
+    return df
 
 
 def rectify_missense(df):
 
-    dg = df.copy()
-    ind = dg[dg['csqn_type_missense'] == 1].index
+    ind = df.index[df['csqn_type_missense'] == 1].tolist()
     forbidden = ['nmd']
     for c in forbidden:
-        dg.loc[ind, c] = 0
-    return dg
+        df.loc[ind, c] = 0
+    return df
 
 
 def rectify_splicing(df):
 
-    dg = df.copy()
-    ind = dg[dg['csqn_type_splicing'] == 1].index
-    forbidden = ['HotMaps_cat_1', 'HotMaps_cat_2',
-                 'nmd',
-                 'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination']
+    ind = df.index[df['csqn_type_splicing'] == 1].tolist()
+    forbidden = ['HotMaps', 'nmd', 'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination']
     for c in forbidden:
-        dg.loc[ind, c] = 0
-    return dg
+        df.loc[ind, c] = 0
+    return df

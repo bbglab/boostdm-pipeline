@@ -12,10 +12,9 @@ def add_feature(df, specific_df, global_df):
     isinmotifs = []
     significant_motif = []
 
-    # classify mutations
     # TODO get rid of iterrows
     for i, row in df.iterrows():
-        mut_in_motif = 3  # it was 0, changed to 3 for consistence with other methods
+        mut_in_motif = 0  # default no-cluster value
         motif_sig = ''
         symbol = row['gene']
         
@@ -24,7 +23,7 @@ def add_feature(df, specific_df, global_df):
         if len(motifs_in_trans) > 0:
             for ix, line in motifs_in_trans.iterrows():
                 if (int(line['START']) < row['pos']) and (row['pos'] < int(line['STOP'])) and (row['csqn_type'] != "synonymous_variant"):
-                    mut_in_motif = 1
+                    mut_in_motif = 2  # tumor type specific cluster
                     motif_sig = '{};{}'.format(line['ELEMENT2'], motif_sig)
 
         if mut_in_motif == 0:
@@ -33,14 +32,15 @@ def add_feature(df, specific_df, global_df):
                 for ix, line in motifs_in_trans.iterrows():
                     if (int(line['START']) < row['pos']) and (row['pos'] < int(line['STOP'])) and (
                             row['csqn_type'] != "synonymous_variant"):
-                        mut_in_motif = 2
+                        mut_in_motif = 1  # another tumor type cluster
                         motif_sig = '{};{}'.format(line['ELEMENT2'], motif_sig)
 
         isinmotifs.append(mut_in_motif)
         significant_motif.append(motif_sig)
 
     df['motif'] = significant_motif
-    df['smRegions_cat'] = isinmotifs
+    df['smRegions'] = isinmotifs
+
     return df
 
 

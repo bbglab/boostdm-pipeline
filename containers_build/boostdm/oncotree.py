@@ -5,8 +5,6 @@ from boostdm.globals import COHORTS_PATH, ONCOTREE_PATH
 
 import pandas as pd
 
-# TODO: check that the paths invoked are correct
-
 
 def namespace(tree):
     pool = []
@@ -20,9 +18,6 @@ class Oncotree:
     def __init__(self):
 
         self.stats_cohorts = pd.read_csv(COHORTS_PATH, sep='\t')
-        # TODO replace by bgoncotree
-        # with open(ONCOTREE_PATH, 'r') as f:
-        #    self.tree = json.load(f)
         self.tree_table = pd.read_csv(ONCOTREE_PATH, sep='\t')
         self.tree = self.to_dict()
         self.ttypes = namespace(self.tree)

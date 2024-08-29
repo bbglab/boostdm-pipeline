@@ -72,7 +72,7 @@ def bootstrap_shap(model_object, x_data):
     shap_bootstrap = []
     for model in model_object['models']:
         explainer = shap.TreeExplainer(model.model)
-        shap_bootstrap.append(explainer.shap_values(x_data))
+        shap_bootstrap.append(explainer.shap_values(x_data, check_additivity=False))
     return np.mean(shap_bootstrap, axis=0)
 
 

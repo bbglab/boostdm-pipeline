@@ -4,22 +4,19 @@ import pandas as pd
 
 def assign(chr_, pos, clusters):
 
-    # TODO we are checking whether they are on the exactly same position. Is that correct?
-    
     clusters_specific = clusters['specific']
-    cluster1 = clusters_specific[
-        (clusters_specific['chromosome'] == chr_) & (clusters_specific['pos'] == pos)]
+    cluster1 = clusters_specific[(clusters_specific['chromosome'] == chr_) & (clusters_specific['pos'] == pos)]
 
     if len(cluster1) > 0:
-        return 1
+        return 2.  # tumor type specific cluster
+    
     else:
         clusters_pan = clusters['pan']
-        cluster2 = clusters_pan[
-            (clusters_pan['chromosome'] == chr_) & (clusters_pan['pos'] == pos)]
+        cluster2 = clusters_pan[(clusters_pan['chromosome'] == chr_) & (clusters_pan['pos'] == pos)]
         if len(cluster2) > 0:
-            return 2
+            return 1.  # another tumor type cluster
 
-    return 3  # no cluster
+    return 0.  # no cluster
 
 
 def add_feature(df, specific_df, global_df):
@@ -29,11 +26,9 @@ def add_feature(df, specific_df, global_df):
         'pan': global_df
     }
 
-    df['HotMaps_cat'] = df.apply(
-        lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)), axis=1
-    )
-
-    df.HotMaps_cat = df.HotMaps_cat.astype('int8')
+    df['HotMaps'] = df.apply(
+        lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)), 
+        axis=1)
 
     return df
 
@@ -50,8 +45,7 @@ def generate(files, pval_thresh=0.05):
     if df.empty:
         df = pd.DataFrame(columns=['chromosome', 'pos'])
     else:
-        s1 = df['genomic position'].str.split(',', expand=True).stack().str.strip().reset_index(level=1,
-                                                                                                      drop=True)
+        s1 = df['genomic position'].str.split(',', expand=True).stack().str.strip().reset_index(level=1, drop=True)
         df1 = pd.DataFrame(s1, columns=['pos'])
         df = df.drop(['genomic position'], axis=1).join(df1).reset_index(drop=True)
         df.chromosome = df.chromosome.str.replace('chr', '')

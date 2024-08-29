@@ -9,8 +9,8 @@ import pybedtools
 import tqdm
 
 from boostdm import BoostDMError
-from boostdm.annotations.utils import encoding, rectify_synonymous, rectify_missense, rectify_splicing
-from boostdm.globals import CANONICAL_TRANSCRIPTS_FILE, MNVS_FILE, COHORTS_PATH, DRIVERS_PATH
+from boostdm.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
+from boostdm.globals import MANE_TRANSCRIPTS_FILE, MNVS_FILE, COHORTS_PATH, DRIVERS_PATH
 from boostdm.oncotree import Oncotree
 from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions, dndscv
 from boostdm.passengers import retrieve_exons, randomize
@@ -68,7 +68,7 @@ def retrieve_expectation(exp_dict, v):
 def set_string_chr(row):
     try:
         return str(int(row["chr"]))
-    except:
+    except ValueError:
         return str(row["chr"])
 
 
@@ -77,6 +77,7 @@ def set_string_chr(row):
 
 
 def oncotree_sisters(cohort):
+    
     """Generator of cohorts belonging to the same ttype type as 'cohort'"""
     # TODO re-implement function in terms of oncotree
     tree = Oncotree()
@@ -111,13 +112,13 @@ def features(df, cohort, clustl_group_path, hotmaps_group_path, smregions_group_
 
     clustl_global_data = pd.read_csv(clustl_group_path, sep='\t')
     clustl_ttype_data = clustl_global_data[clustl_global_data['CANCER_TYPE'] == ttype]
-    clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
+    # clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
     df = clustl.add_feature(df, clustl_ttype_data, clustl_global_data)
 
     # Add 3D clusters
     hotmaps_global_data = pd.read_csv(hotmaps_group_path, sep='\t')
     hotmaps_ttype_data = hotmaps_global_data[hotmaps_global_data['CANCER_TYPE'] == ttype]
-    hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
+    # hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
     df = hotmaps.add_feature(df, hotmaps_ttype_data, hotmaps_global_data)
 
     # add role
@@ -148,15 +149,16 @@ def mnvs_to_remove():
 
 def retrieve_transcript():
 
-    """Returns dataframe with canonical transcript regions"""
+    """Returns dataframe with mane transcript regions (cds + 25bp for splicing)"""
 
-    canonical_transcript_df = pd.read_csv(CANONICAL_TRANSCRIPTS_FILE,
+    mane_transcript_df = pd.read_csv(MANE_TRANSCRIPTS_FILE,
                          sep='\t', header=None, compression='gzip', low_memory=False, skiprows=1)
 
     # TODO: verify the columns we are selecting are the right ones
-    canonical_transcript_df = canonical_transcript_df[[0, 1, 2, 6]].copy()
-    canonical_transcript_df.columns = ['chr', 'start', 'end', 'gene']
-    return canonical_transcript_df
+    
+    mane_transcript_df = mane_transcript_df[[0, 1, 2, 6]].copy()
+    mane_transcript_df.columns = ['chr', 'start', 'end', 'gene']
+    return mane_transcript_df
 
 
 def intersect_region_mutations(cds, pos):
@@ -194,6 +196,7 @@ def load_drivers(cohort, df):
 
 
 def load_mutations(dndscv_annotated, drivers, cohort):
+
     df = pd.read_csv(dndscv_annotated, sep='\t')  # os.path.join(dndscv_path, f'{cohort}.annotmuts.gz')
 
     df = df[df['gene'].isin(drivers)]
@@ -224,8 +227,9 @@ def initialize_trainset(df, drivers):
 
 
 def build_positive_set(df_expect):
-    canonical_transcript = retrieve_transcript()
-    pos = intersect_region_mutations(canonical_transcript, df_expect)
+
+    mane_transcript = retrieve_transcript()
+    pos = intersect_region_mutations(mane_transcript, df_expect)
     pos['response'] = 1
     return pos
 
@@ -279,14 +283,6 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     with open(mutrate_fn, 'rt') as f:
         mutrate = json.load(f)
 
-    """
-    # FIXME load as a single JSON when changes are implemented in intogen+
-    if os.path.exists(mutrate):
-        mr = MutrateReader(mutrate)
-        for gene in tqdm.tqdm(drivers):
-            mutrate[gene] = mr.load(gene)
-    """
-
     initial = initialize_trainset(df, drivers)
     initial = dndscv.filter(initial, dndscv_file, xs_thresh=xs_thresh)
     initial.rename(columns={'mut': 'alt'}, inplace=True)
@@ -297,6 +293,9 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
 
     # positive set
     pos = build_positive_set(initial)
+
+    if len(pos) == 0:
+        raise BoostDMError('Run failed: positive set is empty')
 
     # negative set
 
@@ -310,32 +309,31 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     df['chr'] = df.apply(lambda row: set_string_chr(row), axis=1)
     df['pos'] = df.apply(lambda row: int(row['pos']), axis=1)
 
+    # Reset index
+    df.reset_index(drop=True, inplace=True)
+
     # Add features
     df = features(df, cohort, clustl_group_file, hotmaps_group_file, smregions_group_file)
-    df = encoding(df)
+    df = encode_consequence_type(df)
     df = df[(df['csqn_type_synonymous'] != 1) | (df['response'] != 1)]
     df = rectify_synonymous(df)
     df = rectify_missense(df)
     df = rectify_splicing(df)
-
+    
     return df
 
 
 @click.command()
 @click.option('--cohort', type=str)
-# @click.option('--drivers-summary', 'summary', type=click.Path(exists=True), help='Drivers summary from IntOGen')
 @click.option('--dndscv-path', 'dndscv_path', type=click.Path(exists=True), help='Cohort dNdsCV out')
 @click.option('--dndscv-annotmuts-path', 'dnds_muts_path', type=click.Path(exists=True), help='Cohort dNdsCV annotmuts out')
 @click.option('--mutrate-path', 'mutrate_path', type=click.Path(exists=True), help='Cohort mutrate out')
-# @click.option('--clustl-path', 'clustl_path', type=click.Path(exists=True), help='Cohort OncodriveCLUSTL out')
 @click.option('--clustl-group-path', 'clustl_group_path', type=click.Path(exists=True), help='Combined OncodriveCLUSTL out')
-# @click.option('--hotmaps-path', 'hotmaps_path', type=click.Path(exists=True), help='Cohort HotMAPS out')
 @click.option('--hotmaps-group-path', 'hotmaps_group_path', type=click.Path(exists=True), help='Combined HotMAPS out')
-# @click.option('--smregions-path', 'smregions_path', type=click.Path(exists=True), help='Cohort smregions out')
 @click.option('--smregions-group-path', 'smregions_group_path', type=click.Path(exists=True), help='Combined smregions out')
 @click.option('--out', type=click.Path())
 @click.option('--seed', type=int, default=None)
-@click.option('--splits', type=int, default=42)
+@click.option('--splits', type=int, default=50)
 @click.option('--threshold', type=float, default=0.85)
 def cli(cohort, dndscv_path, dnds_muts_path, mutrate_path, clustl_group_path,
         hotmaps_group_path, smregions_group_path, out, seed, splits, threshold):

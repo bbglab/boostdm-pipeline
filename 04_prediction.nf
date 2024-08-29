@@ -10,10 +10,8 @@ HOTMAPS_GROUP_V = HOTMAPS_GROUP.first()
 SMREGIONS_GROUP = Channel.fromPath("${OUTPUT}/features_group/smregions.tsv.gz")
 SMREGIONS_GROUP_V = SMREGIONS_GROUP.first()
 
-TRAINING_OUT = Channel.fromPath("${OUTPUT}/training_meta/*/*.models.pickle.gz")
-GENE_TTYPE_OUT = TRAINING_OUT.map{ it -> [it.baseName.split('\\.')[0], it.getParent().baseName]}
-
-MODEL = Channel.fromPath("${OUTPUT}/model_selection/eval_data.pickle.gz").first()
+SPLITCV_OUT = Channel.fromPath("${OUTPUT}/splitcv_meta/*/*.cvdata.pickle.gz")
+GENE_TTYPE_OUT = SPLITCV_OUT.map{ it -> [it.baseName.split('\\.')[0], it.getParent().baseName]}
 
 
 process AnnotateSaturation {
@@ -46,7 +44,10 @@ process AnnotateSaturation {
 }
 
 
-// for testing purposes
+MODEL = Channel.fromPath("${OUTPUT}/model_selection/eval_data.pickle.gz").first()
+
+
+// for testing purposes only
 // SATURATION_OUT = Channel.fromPath("${OUTPUT}/saturation/annotation/*.annotated.tsv.gz")
 // ANNOTATION_SATURATION = SATURATION_OUT.map{ it -> [it.baseName.split('\\.')[0], it.baseName.split('\\.')[1], it]}
 
@@ -61,10 +62,9 @@ process PredictSaturation {
         path model from MODEL
 
     output:
-        path output into PREDICTION_SATURATION
+        path("*.tsv.gz") into PREDICTION_SATURATION
 
     script:
-        output = "${gene}.${ttype}.prediction.tsv.gz"
         """
         runner.sh perform_predictions.py \
                 --muts ${input} \
@@ -73,7 +73,6 @@ process PredictSaturation {
                 --models-folder ${OUTPUT}/training_meta \
                 --evaluations-folder ${OUTPUT}/evaluation \
                 --model-selection ${model} \
-                --output-file ${output} \
                 --high-quality-only
         """
 }

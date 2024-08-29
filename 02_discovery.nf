@@ -4,7 +4,6 @@
 // Path channels
 
 DNDS_ANNOTMUTS_FILES = Channel.fromPath("${INTOGEN_DATASETS}/steps/dndscv/*.dndscv_annotmuts.tsv.gz")
-COHORTS_SUMMARY = Channel.fromPath("${INTOGEN_DATASETS}/cohorts.tsv")
 OUT_EVAL_PATH = Channel.fromPath("${OUTPUT}/evaluation/*/*.eval.pickle.gz")
 OUT_EVAL = OUT_EVAL_PATH.map{it -> [it.getParent().baseName, it.baseName.split('\\.')[0], it]}
 
@@ -64,7 +63,6 @@ process Samples4Discovery {
 
     input:
         path input from VARIANTS_JSON
-        path cohorts from COHORTS_SUMMARY
 
     output:
         path(output) into DISCOVERY_SAMPLES
@@ -73,9 +71,8 @@ process Samples4Discovery {
 	  	output = "samples.json"
 		"""
 		runner.sh discovery_index/samples.py \
-			--output ${output} \
-			--cohorts ${cohorts} \
-			${input}
+			--input ${input} \
+            --output ${output}
 		"""
 }
 

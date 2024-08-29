@@ -8,11 +8,11 @@ COHORTS_PATH = os.path.join(INTOGEN_DATASETS, 'cohorts.tsv')
 DRIVERS_PATH = os.path.join(INTOGEN_DATASETS, 'drivers.tsv')
 PHYLOP_FILE = os.path.join(BOOSTDM_DATASETS, 'hg38.phyloP100way.bw')
 MNVS_FILE = os.path.join(INTOGEN_DATASETS, 'steps', 'boostDM', 'mnvs.tsv.gz')
-CANONICAL_TRANSCRIPTS_FILE = os.path.join(BOOSTDM_DATASETS, 'saturation', 'canonical.regions.gz')
+MANE_TRANSCRIPTS_FILE = os.path.join(BOOSTDM_DATASETS, 'saturation', 'cds-5spli.regions.gz')
 TABIX_FILE = os.path.join(BOOSTDM_DATASETS, 'shared', 'vep.tsv.gz')
 PTMS_FILE = os.path.join(BOOSTDM_DATASETS, 'ptms', 'info_functional_sites.json')
 PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'regions_pfam.tsv')
-ONCOTREE_PATH = os.path.join(BOOSTDM_DATASETS, 'shared', 'oncotree-tree.tsv')
+ONCOTREE_PATH = os.path.join(BOOSTDM_DATASETS, 'shared', 'tree.tsv')
 
 # Consequence list taken from: https://www.ensembl.org/info/genome/variation/prediction/predicted_data.html
 CONSEQUENCES_LIST = [
@@ -28,7 +28,10 @@ CONSEQUENCES_LIST = [
     'inframe_deletion',
     'missense_variant',
     'protein_altering_variant',
+    'splice_donor_5th_base_variant',
     'splice_region_variant',
+    'splice_donor_region_variant',
+    'splice_polypyrimidine_tract_variant',
     'incomplete_terminal_codon_variant',
     'start_retained_variant',
     'stop_retained_variant',
@@ -51,7 +54,8 @@ CONSEQUENCES_LIST = [
     'feature_elongation',
     'regulatory_region_variant',
     'feature_truncation',
-    'intergenic_variant'
+    'intergenic_variant',
+    'sequence_variant'
 ]
 
 CONSEQUENCES_DICT = {k: i for i, k in enumerate(CONSEQUENCES_LIST)}
@@ -64,21 +68,21 @@ AGGREGATION_DICT = {'synonymous_variant': 'synonymous',
                     'splice_donor_variant': 'splicing',
                     'splice_acceptor_variant': 'splicing',
                     'splice_region_variant': 'splicing',
-                    'intron_variant': 'splicing'}
+                    'splice_donor_5th_base_variant':'splicing',
+                    'splice_donor_region_variant':'splicing',
+                    'splice_polypyrimidine_tract_variant':'splicing',
+                    'intron_variant': 'splicing'}  # TODO: is "intron_variant" necessary?
 
 COLUMNS_TRAINING = [
-        'CLUSTL_SCORE', 'CLUSTL_cat_1', 'CLUSTL_cat_2',
-        'HotMaps_cat_1', 'HotMaps_cat_2',
-        'smRegions_cat_1', 'smRegions_cat_2',
+        'CLUSTL', 'HotMaps', 'smRegions', 
         'PhyloP',
-        'nmd',
+        'nmd', 
         'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination',
         'csqn_type_missense', 'csqn_type_nonsense', 'csqn_type_splicing', 'csqn_type_synonymous'
     ]
 
 COLUMNS_OUTPUT = ['gene', 'ENSEMBL_TRANSCRIPT', 'ENSEMBL_GENE', 'chr', 'pos', 'alt', 'aachange'] + \
                  COLUMNS_TRAINING + \
-                 ['selected_model_ttype'] + \
                  ['boostDM_score', 'boostDM_class']
 
 COLUMNS_SHAP = [f'shap_{x}' for x in COLUMNS_TRAINING]
@@ -90,7 +94,7 @@ XGB_PARAMS = {
         "reg_lambda": 1,
         "random_state": 42,
         "scale_pos_weight": 1,
-        "subsample": 0.7,
+        "subsample": 1.0,
         "reg_alpha": 0,
         "max_delta_step": 0,
         "min_child_weight": 1,

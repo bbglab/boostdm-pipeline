@@ -33,7 +33,7 @@ class ExtendedHierarchy(Hierarchy):
         return gene, self.get_model(gene, ttype)
 
 
-def weighted_consensus(model_obj, eval_obj, use_weights=True):
+def weighted_consensus(model_obj, eval_obj, use_weights=False):
     """
     Args:
         model_obj: instance of model for a specific ttype-gene
@@ -44,7 +44,7 @@ def weighted_consensus(model_obj, eval_obj, use_weights=True):
                   based on individual predictions and voting among all models and thresholds
         warning:  at this point probabilities may need a final recalibration step
     Satopaa, V. A. et al. Combining multiple probability predictions using a simple logit model.
-    International Journal of Forecasting 30, 344–356 (2014).
+    International Journal of Forecasting 30, 344-356 (2014).
     """
 
     models = model_obj['models']
@@ -102,7 +102,7 @@ def _predict(mutations, models_folder, evaluations_folder, high_quality_only=Tru
         shap_bootstrap = []
         for model in model['models']:
             explainer = shap.TreeExplainer(model.model)
-            shap_bootstrap.append(explainer.shap_values(x_data))
+            shap_bootstrap.append(explainer.shap_values(x_data, check_additivity=False))
         shap_values = np.mean(shap_bootstrap, axis=0)
 
         mutations.loc[df.index, COLUMNS_SHAP] = shap_values
@@ -152,15 +152,13 @@ def predict(mutations, gene, ttype, model_selection_dict, models_folder, evaluat
     shap_bootstrap = []
     for model in model['models']:
         explainer = shap.TreeExplainer(model.model)
-        shap_bootstrap.append(explainer.shap_values(x_data))
+        shap_bootstrap.append(explainer.shap_values(x_data, check_additivity=False))
     shap_values = np.mean(shap_bootstrap, axis=0)
 
     mutations.loc[mutations.index, COLUMNS_SHAP] = shap_values
     mutations.loc[:, 'boostDM_class'] = mutations['boostDM_score'].apply(lambda x: x >= 0.5)
 
-    mutations['selected_model_ttype'] = ttype
-
-    return mutations
+    return mutations, selected_model_ttype
 
 
 def predict_with_model(mutations, model, models_folder, evaluations_folder):
@@ -169,7 +167,7 @@ def predict_with_model(mutations, model, models_folder, evaluations_folder):
     mutations['selected_model_ttype'] = ttype
     mutations['selected_model_gene'] = gene
 
-    return _predict(mutations, models_folder, evaluations_folder)
+    return _predict(mutations, models_folder, evaluations_folder), ttype
 
 
 @click.command()
@@ -179,9 +177,8 @@ def predict_with_model(mutations, model, models_folder, evaluations_folder):
 @click.option('--models-folder', type=click.Path(exists=True), help="Path to the folder where the models are", required=True)
 @click.option('--evaluations-folder', type=click.Path(exists=True), help="Path to the folder where the evaluations are", required=True)
 @click.option('--model-selection', type=str, help="Either the path to the model selection dict, or the gene to be used", required=True)
-@click.option('--output-file', type=click.Path(), help="File with the annotated mutations", required=True)
 @click.option('--high-quality-only', is_flag=True, show_default=True, default=False, help="Prediction only if matching models are high-quality")
-def cli(muts, gene, tumor_type, models_folder, evaluations_folder, model_selection, output_file, high_quality_only):
+def cli(muts, gene, tumor_type, models_folder, evaluations_folder, model_selection, high_quality_only):
     
     df = pd.read_csv(muts, sep='\t')
     df_mutations = df[df['gene'] == gene]
@@ -189,19 +186,20 @@ def cli(muts, gene, tumor_type, models_folder, evaluations_folder, model_selecti
     if os.path.exists(model_selection):
         with gzip.open(model_selection, 'rb') as g:
             model_selection_dict = pickle.load(g)
-        df = predict(df_mutations,
-                     gene=gene,
-                     ttype=tumor_type,
-                     model_selection_dict=model_selection_dict,
-                     models_folder=models_folder,
-                     evaluations_folder=evaluations_folder,
-                     high_quality_only=high_quality_only)
+        df, selected_model_ttype = predict(df_mutations,
+                                           gene=gene,
+                                           ttype=tumor_type,
+                                           model_selection_dict=model_selection_dict,
+                                           models_folder=models_folder,
+                                           evaluations_folder=evaluations_folder,
+                                           high_quality_only=high_quality_only)
     else:
-        df = predict_with_model(df_mutations, (tumor_type, model_selection),
-                                models_folder=models_folder,
-                                evaluations_folder=evaluations_folder)
+        df, _ = predict_with_model(df_mutations, (tumor_type, model_selection),
+                                   models_folder=models_folder,
+                                   evaluations_folder=evaluations_folder)
 
     output_cols = COLUMNS_OUTPUT + COLUMNS_SHAP
+    output_file = f'{gene}.model.{selected_model_ttype}.features.{tumor_type}.prediction.tsv.gz'
 
     df[output_cols].to_csv(output_file,
                            index=False,

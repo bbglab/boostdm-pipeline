@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import xgboost as xgb
 from sklearn.metrics import matthews_corrcoef, roc_curve, roc_auc_score
-
 import warnings
 warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
 warnings.filterwarnings(module='sklearn*', action='ignore', category=RuntimeWarning)
@@ -13,62 +12,22 @@ warnings.filterwarnings(module='ipykernel*', action='ignore', category=FutureWar
 warnings.filterwarnings(module='shap*', action='ignore', category=RuntimeWarning)
 
 
-feat_dict = {
-    'csqn_type': ['missense', 'nonsense', 'splicing', 'synonymous'],
-    'CLUSTL_cat': [1, 2],
-    'HotMaps_cat': [1, 2],
-    'smRegions_cat': [1, 2]
-}
+csqn_type_list = ['missense', 'nonsense', 'splicing', 'synonymous']
+
+
+def encode_consequence_type(data):
+    data.loc[~data['csqn_type'].isin(csqn_type_list), 'csqn_type'] = 'none'
+    one_hot = pd.get_dummies(data, columns=['csqn_type'], prefix_sep='_')
+    one_hot.drop(columns=['csqn_type_none'], inplace=True)
+    return one_hot
 
 
 """
-def encode_feature(data, feature):
-
-    cats = feat_dict[feature]
-    data.loc[~data[feature].isin(cats), feature] = 'none'
-    one_hot = pd.get_dummies(data[[feature]], columns=[feature], prefix_sep='_')
-    for value in cats:
-        col = feature + '_' + str(value)
-        if col not in list(one_hot.columns):
-            one_hot[col] = 0
-    data.drop(columns=feature, inplace=True)
-    to_remove = feature + '_' + 'none'
-    if to_remove in one_hot.columns:
-        one_hot.drop(columns=to_remove, inplace=True)
-    canonical_order = [feature + '_' + str(value) for value in feat_dict[feature]]
-    data = data.join(one_hot[canonical_order])
-    return data
-"""
-
-def cluster_encoding(value):
-    
-    if value == 1:
-        return 1, 1
-    elif value == 2:
-        return 0, 1
-    elif value == 3:
-        return 0, 0
-
-
-def encode_cluster(data, feature):
-    """
-    admissible combinations:
-    cat_1 == 1 => cat_2 == 1
-    cat_1 == 0 & cat_2 == 1
-    cat_1 == 0 & cat_2 == 0
-    """
-
-    data[f'{feature}_1'], data[f'{feature}_2'] = zip(*data[feature].map(cluster_encoding))
-    data.drop(columns=feature, inplace=True)
-    return data
-
-
 def encode_consequence_type(data, feature):
     
-    cats = feat_dict[feature]
-    data.loc[~data[feature].isin(cats), feature] = 'none'
+    data.loc[~data[feature].isin(csqn_type_list), feature] = 'none'
     one_hot = pd.get_dummies(data[[feature]], columns=[feature], prefix_sep='_')
-    for value in cats:
+    for value in csqn_type_list:
         col = feature + '_' + str(value)
         if col not in list(one_hot.columns):
             one_hot[col] = 0
@@ -76,10 +35,10 @@ def encode_consequence_type(data, feature):
     to_remove = feature + '_' + 'none'
     if to_remove in one_hot.columns:
         one_hot.drop(columns=to_remove, inplace=True)
-    canonical_order = [feature + '_' + str(value) for value in feat_dict[feature]]
+    canonical_order = [feature + '_' + str(value) for value in csqn_type_list]
     data = data.join(one_hot[canonical_order])
     return data
-
+"""
 
 def encoding_test():
 
