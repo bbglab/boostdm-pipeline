@@ -1,2 +1,44 @@
-cd boostdm/
-sudo singularity build boostdm.simg Singularity
+
+## Set ENVIRONMENT VARS
+
+- GENOME_BUILD
+- INTOGEN_DATASETS
+- BOOSTDM_DATASETS
+- OUTPUT
+- MAVE_DATA
+
+```sh
+export <VAR_NAME>=/path/to/data
+```
+
+## C++ dependancy
+
+Before running boostDM in a cluster or in local without the use of a container, follow this step:
+
+1. download clang and c++ in a conda environment
+2. Export the path to the environment variable so it can be found when building the package and env
+    ```sh
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/wasiahmad/software/anaconda3/lib/
+    ```
+> !NOTE
+> You can automatically add the above line in the .bashrc in order to have it by default
+
+## Run BoostDM
+
+```bash
+git clone https://github.com/bbglab/boostdm-pipeline.git
+cd boostdm-pipeline/containers_build
+python -m venv .venv
+.venv/bin/pip install -e .
+source .venv/bin/activate
+boostdm --help
+```
+
+> [!NOTE]
+> If you install a modern build tool like [uv](https://github.com/astral-sh/uv),
+> you can simply do this:
+> ```bash
+> git clone https://github.com/bbglab/clustering_3d.git
+> cd clustering_3d
+> uv run oncodrive3d --help
+> ```

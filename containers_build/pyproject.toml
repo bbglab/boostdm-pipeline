@@ -1,0 +1,52 @@
+
+[project]
+name = "boostdm"
+version = "2024.07.15.dev+cancer"
+description = "BoostDM is a tool for the identification of driver mutations in cancer"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Ferran Muiños", email = "ferran.muinos@irbbarcelona.org"},
+    {name = "Barcelona Biomedical Genomics Lab", email = "bbglab@irbbarcelona.org"}
+]
+keywords = ["boostdm", "drivers-mutation"]
+classifiers = ["Private :: Do Not Upload"]
+
+
+requires-python = ">=3.9.20,<3.13"
+dependencies = [
+    "pytabix==0.0.2",
+    "bgdata==2.0.4",
+    "bgreference==0.7",
+    "bgoncotree==0.5",
+    "click==8.1.7",
+    "intervaltree==3.1.0",
+    "pandas==2.2.3",
+    "pyliftover==0.4.1",
+    "scikit-learn==1.6.0",
+    "xgboost==0.90",
+    "shap==0.46",
+    "pillow==11.0.0",
+    "scikit-optimize==0.10.2",
+    "seaborn==0.13.2",
+    "pybedtools==0.10.0",
+    "pybigwig==0.3.23",
+    "dill==0.3.9",
+]
+
+[build-system]
+requires = ["hatchling", "cython==0.29.36"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+boostdm = "boostdm.cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["boostdm"]
+
+[dependency-groups]
+tests = [
+    "coverage>=7.6.9",
+    "pytest>=8.3.4",
+    "vulture>=2.14",
+]
