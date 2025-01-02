@@ -6,36 +6,17 @@ from boostdm.globals import TABIX_FILE
 from boostdm.vepreader import Tabix
 
 
-def nmd_rule(exon, total_exons):
-
-    """
-    mutation is in an exon
-    if first or last exon then return 1
-    otherwise return 0
-    """
-
-    if exon == 0:
-        nmd = 0
-    elif (exon == 1) or (exon == total_exons):
-        nmd = 1
-    else:
-        nmd = 0
-    return nmd
-
-
-def get_exon(chr_, pos, alt,gene, reader):
+def get_nmd(chr_, pos, alt, gene, reader):
 
     for data in reader.get(chr_, pos, pos):
         alt_vep = (data["ALT"] == alt)
         mane_vep = (data["MANE_SELECT"] != '-') # impose mane transcript
         correct_gene = (data["SYMBOL"] == gene)  # skip cases with antisense overlapping gene
         if alt_vep and mane_vep and correct_gene:
-            exons = data["EXON"]
-            if '/' in exons:
-                exon, total_exons = tuple(exons.split('/'))
-            else:
-                exon, total_exons = 0, 0
-            return nmd_rule(exon, total_exons)
+            if data["NMD_SKIPPING"] == '-':
+                return 0
+            elif data["NMD_SKIPPING"] == 'NMD_escaping_variant':
+                return 1
     return 0
 
 
@@ -43,12 +24,10 @@ def add_feature(df):
 
     df = df.copy()
     with Tabix(TABIX_FILE) as reader:
-        get_from_reader = partial(get_exon, reader=reader)
-        df['nmd'] = df.apply(lambda row: get_from_reader(str(row['chr']),
-                                                         int(row['pos']),
-                                                         row['alt'],
-                                                         row['gene']), axis=1)
+        get_from_reader = partial(get_nmd, reader=reader)
+        df['nmd'] = df.apply(lambda row: get_from_reader(row['chr'], row['pos'], row['alt'], row['gene']), axis=1)
     return df
+
 
 
 def test():
