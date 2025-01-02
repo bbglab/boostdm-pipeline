@@ -2,8 +2,8 @@
 
 rm -r work/
 rm -r .nextflow/
-rm timeline-*
-rm trace-*
+rm timeline*
+rm trace*
 rm .nextflow.log*
 
 find . -maxdepth 4 -type d -name .idea -exec rm -r {} +
