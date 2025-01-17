@@ -13,9 +13,17 @@ This guide will help you set up your development environment using `uv` and inst
 Before you begin, ensure the following software is installed on your system -read the [HOWTO](/containers_build/HOW_TO.txt) for more info:
 
 - **Python 3.9.20 or later**
+- **BedTools and htslib**
 - **uv** (Universal Virtual environment package manager)  
   Follow the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) to set it up.
 - **A C/C++ compiler** This will be needed to install boostDM dependancies
+
+> ![NOTE!]
+> When building the package you can run the following to tell `uv` the C/C++ compiler it should use
+> ```
+> $ CXX=gcc CC=clang uv sync
+> ```
+>
 
 ### Installation
 

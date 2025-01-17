@@ -6,6 +6,7 @@ import pandas as pd
 
 
 def build_table(files):
+    """Build a table with mutations from multiple cohorts."""
     mutations_table = []
     for file in files:
         cohort_name = path.basename(file).split('.')[0]
@@ -22,6 +23,7 @@ def build_table(files):
 @click.argument('files', nargs=-1)
 @click.option('--output', type=click.Path())
 def cli(files, output):
+    """Prepare mutation datasets for discovery step."""
     df = build_table(files)
     df.to_csv(output, sep='\t', index=False, compression='gzip')
 

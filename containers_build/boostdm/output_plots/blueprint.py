@@ -34,11 +34,11 @@ names = {'HotMaps': '3D cluster',
          'csqn_type_splicing': 'Splicing'}
 
 def get_PFAMs_per_transcript(transcript):
-    
+
     BOOSTDM_DATASETS = os.environ['BOOSTDM_DATASETS']
     PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'pfam_biomart.tsv.gz')
     PFAM_DOMAINS_INFO = os.path.join(BOOSTDM_DATASETS, 'pfam_info.name.tsv')
-    
+
     df_pfam = pd.read_csv(PFAM_DOMAINS_FILE, sep="\t", names=["ENSEMBL_GENE", "ENSEMBL_TRANSCRIPT", "START", "END", "DOMAIN"])
     df_names = pd.read_csv(PFAM_DOMAINS_INFO, sep="\t", names=["DOMAIN", "CLAN", "CLAN_NAME", "DOMAIN_NAME", "Long Name"])
 
@@ -63,7 +63,7 @@ def get_position(row):
         return v
     except Exception:
         return -1
-    
+
 def get_all_children(df, parent_id, included=None):
     if included is None:
         included = []
@@ -76,7 +76,7 @@ def get_all_children(df, parent_id, included=None):
 
     return included
 
-    
+
 def load_saturation_cancer(path, gene, shap_corrected):
 
     df = path.copy()
@@ -110,7 +110,7 @@ def load_saturation_cancer(path, gene, shap_corrected):
                                 "PTM": np.nanmax,
                                 "nmd": np.nanmax
                             })
-        df3["gene"] = gene                                        
+        df3["gene"] = gene
         df3.sort_values(by='Protein_position', ascending=True, inplace=True)
         df3.reset_index(inplace=True)
         return df3
@@ -122,7 +122,7 @@ def create_observed_dataset(prediction_path, gene, cohort, obs_mut):
     sat_pred = pd.read_csv(prediction_path, sep='\t')
     sat_pred['chr'] = sat_pred['chr'].astype(str)
     sat_pred['pos'] = sat_pred['pos'].astype(int)
-    
+
     ttypes_included = get_all_children(oncotree_table, cohort)
     matching_cohorts = []
     for ttype in ttypes_included:
@@ -164,7 +164,7 @@ def plot_gene_full_nucleotide(data, transcript, sat_pred, ax0, all_possible=Fals
     ax0.tick_params(axis='x', length=0)
     ax0.set_xticks([])
 
-   
+
     # set equivalent coordinates for the three possible mutations
     prot_pos = list(df.Protein_position)
     ys = df["number_observed_muts"].values
@@ -227,10 +227,10 @@ def plot_codon_bands(df_pfam_gene, df, ax_0, ax_2, ax_4):
 
     # set equivalent coordinates for the three possible mutations
     prot_pos = list(df.Protein_position)
-    
+
     # retrieve values
     d = df["boostDM_score"].values
-    csqn_type_miss  = df["csqn_type_missense"].values 
+    csqn_type_miss  = df["csqn_type_missense"].values
     csqn_type_non   = df["csqn_type_nonsense"].values
 
     passenger_x, passenger_y, passenger_color = [], [], []
@@ -239,7 +239,7 @@ def plot_codon_bands(df_pfam_gene, df, ax_0, ax_2, ax_4):
     # for each of the positions
     for i, p in enumerate(prot_pos):
         for j, score in enumerate(d[i]):
-            
+
             if score < 0.5:
                 passenger_x.append(p)
                 passenger_y.append(score)
@@ -254,16 +254,16 @@ def plot_codon_bands(df_pfam_gene, df, ax_0, ax_2, ax_4):
     ax_0.scatter(driver_x, driver_y, s=size+2, c=driver_color, alpha=0.1)
     ax_0.set_xticks([])
     ax_0.set_xlim(0, len(prot_pos))
-    
+
     driver_score = []
     for aa, bDMscore in zip(df['Protein_position'], df['boostDM_score']):
         driver_score = driver_score+len([1 for x in bDMscore if float(x)>0.5])*[aa]
-    
+
     miss_high_score = []
     for aa, bDMscore, ttype in zip(df['Protein_position'], df['boostDM_score'], df['csqn_type_missense']):
         ttype_score = [float(a)*float(b) for a,b in zip(bDMscore,ttype)]
         miss_high_score = miss_high_score+len([1 for x in ttype_score if float(x)>=0.9])*[aa]
-    
+
     miss_low_score = []
     for aa, bDMscore, ttype in zip(df['Protein_position'], df['boostDM_score'], df['csqn_type_missense']):
         ttype_score = [float(a)*float(b) for a,b in zip(bDMscore,ttype)]
@@ -273,7 +273,7 @@ def plot_codon_bands(df_pfam_gene, df, ax_0, ax_2, ax_4):
     for aa, bDMscore, ttype in zip(df['Protein_position'], df['boostDM_score'], df['csqn_type_nonsense']):
         ttype_score = [float(a)*float(b) for a,b in zip(bDMscore,ttype)]
         non_high_score = non_high_score+len([1 for x in ttype_score if float(x)>=0.9])*[aa]
-        
+
     non_low_score = []
     for aa, bDMscore, ttype in zip(df['Protein_position'], df['boostDM_score'], df['csqn_type_nonsense']):
         ttype_score = [float(a)*float(b) for a,b in zip(bDMscore,ttype)]
@@ -310,7 +310,7 @@ def plot_codon_bands(df_pfam_gene, df, ax_0, ax_2, ax_4):
 
     ax_4.set_xticks(protein_ticks)
     ax_4.set_xticklabels(protein_ticks, fontsize = 6)
-    
+
     ax_4.set_xlim(0, max(prot_pos))
     ax_4.set_yticks([])
     ax_4.tick_params(axis='x', which='major', pad=3)
@@ -347,14 +347,14 @@ def tracked_blueprint_all(gene, ttype_model, ttype_features, df_codon, df, sat_p
         axes = []
         for i, track in enumerate(names):
             axes.append(plt.subplot(gs[border+i+1, :12], sharex=ax1))
-        
+
         # plot scatterplot, driver tracks and protein body
         plot_codon_bands(subset_data_pfam, subset_data_muts, ax1, ax3, ax5)
 
         # plot needlplot
         data = get_plot_data_joanen(df) #data, count_driver, count_total
         plot_gene_full_nucleotide(data, transcript, sat_pred, ax0)
-        
+
         # plot features tracks
         for i, track in enumerate(names):
             color = colors[i]
@@ -376,7 +376,7 @@ def tracked_blueprint_all(gene, ttype_model, ttype_features, df_codon, df, sat_p
                                horizontalalignment='right', verticalalignment='center')
 
         fn = os.path.join(os.path.join(os.environ['OUTPUT'], 'evaluation', ttype_model, f'{gene}.eval.pickle.gz'))
-        
+
         with gzip.open(fn, 'rb') as f:
             l = pickle.load(f)
         Fscore50 = round(np.nanmean(l['fscore50']), 2)
@@ -404,21 +404,21 @@ def cli(gene, ttmodel, ttfeatures):
     Plots the blueprint
     """
 
-    # Matrix for dotplot 
-    fn = os.path.join(cancer_predictions_path, f'{gene}.model.{ttmodel}.features.{ttfeatures}.prediction.tsv.gz') 
+    # Matrix for dotplot
+    fn = os.path.join(cancer_predictions_path, f'{gene}.model.{ttmodel}.features.{ttfeatures}.prediction.tsv.gz')
     cancer_mat = pd.read_csv(fn, sep="\t")
     cancer_mat = cancer_mat[~(cancer_mat['aachange'].isna())].reset_index(drop=True)
     df_codon = load_saturation_cancer(cancer_mat, gene, shap_corrected=False)
-    
+
     # Matrix for needleplot
     cancer_mat["Protein_position"] = cancer_mat.apply(lambda row: get_position(row), axis=1)
-    
+
     # Observed mutations
     obs_mut.rename(columns={'mut': 'alt'}, inplace=True)
     obs_mut['chr'] = obs_mut['chr'].astype(str)
     obs_mut['pos'] = obs_mut['pos'].astype(int)
     df = create_observed_dataset(fn, gene, ttfeatures, obs_mut)
-    
+
     # PLOT
     tracked_blueprint_all(gene, ttmodel, ttfeatures, df_codon, df, cancer_mat, show=True)
     plt.close()

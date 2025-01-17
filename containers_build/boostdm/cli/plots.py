@@ -6,7 +6,7 @@ from boostdm.output_plots.discovery_plot import cli as discovery_plot
 
 @click.group(name="plot")
 def plots_group():
-    """Annotation-related commands."""
+    """Plotting-related commands."""
     pass
 
 plots_group.add_command(blueprint, name="blueprint")

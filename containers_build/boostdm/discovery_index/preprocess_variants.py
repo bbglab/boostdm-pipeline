@@ -8,6 +8,7 @@ import click
 @click.option('--inputfolder', type=click.Path())
 @click.option('--output', type=click.Path())
 def cli(inputfolder, output):
+    """Collect metadata from multiple cohorts."""
     print(inputfolder)
     print(output)
     meta_d = {}

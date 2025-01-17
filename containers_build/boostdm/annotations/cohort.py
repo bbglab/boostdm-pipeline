@@ -197,7 +197,7 @@ def load_drivers(cohort, df):
 
 def load_mutations(dndscv_annotated, drivers, cohort):
 
-    df = pd.read_csv(dndscv_annotated, sep='\t')  # os.path.join(dndscv_path, f'{cohort}.annotmuts.gz')
+    df = pd.read_csv(dndscv_annotated, sep='\t', float_precision=None)  # os.path.join(dndscv_path, f'{cohort}.annotmuts.gz')
 
     df = df[df['gene'].isin(drivers)]
     if len(df) == 0:
@@ -337,7 +337,7 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
 @click.option('--threshold', type=float, default=0.85)
 def cli(cohort, dndscv_path, dnds_muts_path, mutrate_path, clustl_group_path,
         hotmaps_group_path, smregions_group_path, out, seed, splits, threshold):
-    """build raw mutations table"""
+    """Build raw mutations table"""
 
     np.random.seed(seed)
 

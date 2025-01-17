@@ -8,7 +8,7 @@ from boostdm.benchmarks.precision_recall import cli as precision_recall
 
 @click.group(name="benchmark")
 def benchmarks_group():
-    """Annotation-related commands."""
+    """Benchmark-related commands."""
     pass
 
 benchmarks_group.add_command(prepare_vep_input, name="prepare_vep")

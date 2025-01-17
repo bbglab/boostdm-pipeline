@@ -124,7 +124,7 @@ def discovery_run(samples, mutations, iterations=100, ngrid=20):
 @click.option('--samples', type=click.Path(exists=True), required=True)
 @click.option('--output', type=str)
 def cli(evaluation_path, mutations, samples, output):
-
+    """Calculate the discovery index for each gene-ttype."""
     tree = Oncotree()
 
     df_discovery_index = {'gene': [], 'ttype': [], 'n_muts': [], 'n_unique_muts': [],
@@ -164,7 +164,7 @@ def cli(evaluation_path, mutations, samples, output):
             df_discovery_index['discovery_index'].append(discovery)
             df_discovery_index['discovery_high'].append(interquartile_range[1])
             df_discovery_index['discovery_low'].append(interquartile_range[0])
-        
+
     df_discovery_index = pd.DataFrame(df_discovery_index)
     # df_discovery_index = df_discovery_index[~df_discovery_index.isnull()]
     df_discovery_index.to_csv(output, sep='\t', index=False, compression='gzip')

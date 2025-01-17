@@ -19,10 +19,6 @@ warnings.filterwarnings(module='pandas*', action='ignore', category=RuntimeWarni
 
 from boostdm.globals import XGB_PARAMS
 
-# TODO: remove this dependency using xgboost directly!
-from boostwrap import Classifier
-
-
 # Globals
 # -------
 
@@ -41,11 +37,11 @@ def train(values):
     params['base_score'] = y_train.mean()
     params['n_jobs'] = 1
     params['seed'] = seed
-    myclassifier = Classifier(**params)
+    myclassifier = xgb.XGBClassifier(**params)
 
     # train with xgboost
     learning_curve_dict = {}
-    myclassifier.train(x_train, y_train,
+    myclassifier.fit(x_train, y_train,
                        eval_set=[(x_train, y_train), (x_test, y_test)],
                        eval_metric='logloss',  # mcc_loss could be used here
                        early_stopping_rounds=2000,
@@ -54,9 +50,9 @@ def train(values):
                        ],
                        verbose=False)
 
-    params['n_estimators'] = myclassifier.model.best_iteration
+    params['n_estimators'] = myclassifier.best_iteration
     learning_curve_dict = {k: v['logloss'][:params['n_estimators']] for k, v in learning_curve_dict.items()}
-    myclassifier.model.set_params(**params)
+    myclassifier.set_params(**params)
 
     return myclassifier, split_number, x_test, y_test, learning_curve_dict
 
@@ -72,6 +68,7 @@ def train(values):
 @click.option('--min-rows', type=int, help='Minimum number of rows to carry out training', default=30)
 @click.option('--seed', type=int, default=None)
 def cli(file_cv, output_file, cores, min_rows, seed):
+    """Train the models"""
 
     np.random.seed(seed)
 

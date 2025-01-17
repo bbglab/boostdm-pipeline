@@ -116,6 +116,7 @@ def evaluate(model):
 @click.option('--model', 'model_path', type=click.Path(exists=True), help='File corresponding to models for oncotree instance')
 @click.option('--output', 'output_path', type=click.Path(), help='output file')
 def cli(model_path, output_path):
+    """Evaluate the model"""
 
     with gzip.open(model_path, 'rb') as f:
         model = pickle.load(f)

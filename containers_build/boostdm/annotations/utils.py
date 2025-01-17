@@ -8,7 +8,7 @@ csqn_type_list = ['missense', 'nonsense', 'splicing', 'synonymous']
 def encode_consequence_type(data):
 
     data.loc[~data['csqn_type'].isin(csqn_type_list), 'csqn_type'] = 'none'
-    one_hot = pd.get_dummies(data, columns=['csqn_type'], prefix_sep='_')
+    one_hot = pd.get_dummies(data, columns=['csqn_type'], prefix_sep='_', dtype=int)
     one_hot.drop(columns=['csqn_type_none'], inplace=True, errors='ignore')
     for c in csqn_type_list:
         col = f'csqn_type_{c}'
