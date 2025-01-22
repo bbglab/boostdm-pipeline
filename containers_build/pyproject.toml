@@ -39,7 +39,12 @@ requires = ["hatchling", "cython==0.29.36"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-boostdm = "boostdm.cli:cli"
+train = "boostdm.cli.train:cli"
+discovery = "boostdm.cli.discover:cli"
+evaluate = "boostdm.evaluation.data:cli"
+predict = "boostdm.cli.predict:cli"
+plots = "boostdm.cli.plots:cli"
+benchmark = "boostdm.cli.benchmark:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["boostdm"]

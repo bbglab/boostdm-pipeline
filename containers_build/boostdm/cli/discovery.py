@@ -6,10 +6,11 @@ from boostdm.discovery_index.samples import cli as discover_samples
 from boostdm.discovery_index.discovery import cli as run
 
 @click.group(name="discover")
-def discovery_group():
-    """Discover-related commands."""
+def cli():
+    """BoostDM: Discover-related commands."""
 
-discovery_group.add_command(prepare_dataset, name="prepare-dataset")
-discovery_group.add_command(collect_metadata, name="collect-metadata")
-discovery_group.add_command(discover_samples, name="collect-samples")
-discovery_group.add_command(run, name="run")
+cli.add_command(prepare_dataset, name="prepare-dataset")
+cli.add_command(collect_metadata, name="collect-metadata")
+cli.add_command(discover_samples, name="collect-samples")
+cli.add_command(run, name="run")
+

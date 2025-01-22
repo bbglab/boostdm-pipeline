@@ -7,12 +7,13 @@ from boostdm.benchmarks import annotate_cv_tables
 from boostdm.benchmarks.precision_recall import cli as precision_recall
 
 @click.group(name="benchmark")
-def benchmarks_group():
-    """Benchmark-related commands."""
+def cli():
+    """BoostDM: Benchmark-related commands."""
     pass
 
-benchmarks_group.add_command(prepare_vep_input, name="prepare_vep")
-benchmarks_group.add_command(create_cv_tables, name="create")
-benchmarks_group.add_command(annotate_cv_tables, name="annotate")
-benchmarks_group.add_command(saturation_dbnsfp, name="saturation")
-benchmarks_group.add_command(precision_recall, name="run")
+cli.add_command(prepare_vep_input, name="prepare_vep")
+cli.add_command(create_cv_tables, name="create")
+cli.add_command(annotate_cv_tables, name="annotate")
+cli.add_command(saturation_dbnsfp, name="saturation")
+cli.add_command(precision_recall, name="run")
+
