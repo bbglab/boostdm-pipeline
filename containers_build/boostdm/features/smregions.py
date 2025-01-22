@@ -8,7 +8,7 @@ from boostdm.globals import PFAM_DOMAINS_FILE
 def add_feature(df, specific_df, global_df):
 
     # TODO: implement as an apply
-    
+
     isinmotifs = []
     significant_motif = []
 
@@ -17,7 +17,7 @@ def add_feature(df, specific_df, global_df):
         mut_in_motif = 0  # default no-cluster value
         motif_sig = ''
         symbol = row['gene']
-        
+
         # select only the gene symbol to speed things up
         motifs_in_trans = specific_df[specific_df['SYMBOL'] == symbol]
         if len(motifs_in_trans) > 0:

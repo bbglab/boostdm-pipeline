@@ -51,9 +51,9 @@ def add_feature(df, specific_df, global_df):
     }
 
     df['CLUSTL'] = df.apply(
-        lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)), 
+        lambda x: pd.Series(assign(x['chr'], x['pos'], clusters)),
         axis=1)
-    
+
     return df
 
 
@@ -65,7 +65,8 @@ def generate(files, pval_thresh=0.05):
     for file in files:
         input1 = pd.read_csv(file,
                              sep='\t',
-                             usecols=['CHROMOSOME', 'COORDINATES', 'SCORE', 'P']).drop_duplicates()
+                             usecols=['CHROMOSOME', 'COORDINATES', 'SCORE', 'P'],
+                             float_precision=None).drop_duplicates()
         if input1.shape[0] == 0:
             continue
         input2 = input1.COORDINATES.str.split(';').apply(pd.Series)
@@ -73,7 +74,7 @@ def generate(files, pval_thresh=0.05):
         input3 = input2.stack().reset_index(['CHROMOSOME', 'SCORE', 'P'])
         input3['5_COORD'], input3['3_COORD'] = zip(*input3[0].map(lambda x: tuple(x.split(','))))
         del input3[0]
-        df = df.append(input3[input3.P <= pval_thresh], ignore_index=True, sort=False)
+        df = pd.concat([df, input3[input3.P <= thresh]], ignore_index=True, sort=False)
 
     if len(df) == 0:
         return pd.DataFrame(columns=['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE'])

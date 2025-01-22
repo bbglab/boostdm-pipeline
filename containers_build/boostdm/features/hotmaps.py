@@ -40,7 +40,7 @@ def generate(files, pval_thresh=0.05):
     for input_file in files:
         input = pd.read_csv(input_file, sep='\t', header=0,
                             usecols=['chromosome', 'genomic position', 'q-value']).drop_duplicates()
-        df = df.append(input[input['q-value'] <= pval_thresh], ignore_index=True, sort=False)
+        df = pd.concat([df, input[input['q-value'] <= thresh]], ignore_index=True, sort=False)
 
     if df.empty:
         df = pd.DataFrame(columns=['chromosome', 'pos'])
