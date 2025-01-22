@@ -6,10 +6,11 @@ import pandas as pd
 
 from boostdm.features import clustl, hotmaps, smregions
 
-
-@click.group()
-def cli():
-    pass
+FEATURES_DICT = {
+    'clustl' : clustl,
+    'hotmaps': hotmaps,
+    'smregions' : smregions
+}
 
 
 def load_ttypes_map(file):
@@ -28,59 +29,31 @@ def group_by_ttype(files, ttype_map):
     for group, files_list in groups.items():
         yield group, files_list
 
-
-@cli.command()
+@click.command()
 @click.option('--output', type=click.Path(), help='Output file')
-@click.option('--threshold', default=0.05, type=float, help='Pvalue threshold')
+@click.option('--threshold', default=0.05, type=float, help='Pvalue/Qvalue threshold')
 @click.option('--cohorts', type=click.Path(), required=True, help='cohorts file')
+@click.option(
+    '--method',
+    type=click.Choice(list(FEATURES_DICT.keys()), case_sensitive=False),
+    required=True,
+    help=f'Methods used to compute features. Choose one of: {FEATURES_DICT.keys()}'
+)
 @click.argument('files', nargs=-1)
-def group_clustl(files, output, threshold, cohorts):
+def cli(files, output, threshold, cohorts, method):
+    """Group features for either ClustL, Hotmaps and SMRegions."""
+
+    feature = FEATURES_DICT.get(method)
 
     data = []
     ttypes_map = load_ttypes_map(cohorts)
     for ttype, files_list in group_by_ttype(files, ttypes_map):
 
-        df = clustl.generate(files_list, pval_thresh=threshold)
+        df = feature.generate(files_list, thresh=threshold )
         df['CANCER_TYPE'] = ttype
         data.append(df)
 
     df = pd.concat(data, axis=0)
-    df.to_csv(output, sep='\t', index=False, compression="gzip")
-
-
-@cli.command()
-@click.option('--output', type=click.Path(), help='Output file')
-@click.option('--threshold', default=0.05, type=float, help='Pvalue threshold')
-@click.option('--cohorts', type=click.Path(), required=True, help='cohorts file')
-@click.argument('files', nargs=-1)
-def group_hotmaps(files, output, threshold, cohorts):
-
-    data = []
-    ttypes_map = load_ttypes_map(cohorts)
-    for ttype, files_list in group_by_ttype(files, ttypes_map):
-        df = hotmaps.generate(files_list, pval_thresh=threshold)
-        df['CANCER_TYPE'] = ttype
-        data.append(df)
-
-    df = pd.concat(data, axis=0)
-    df.to_csv(output, sep='\t', index=False, compression="gzip")
-
-
-@cli.command()
-@click.option('--output', type=click.Path(), help='Output file')
-@click.option('--threshold', default=0.05, type=float, help='Pvalue threshold')
-@click.option('--cohorts', type=click.Path(), required=True, help='cohorts file')
-@click.argument('files', nargs=-1)
-def group_smregions(files, output, threshold, cohorts):
-
-    data = []
-    ttypes_map = load_ttypes_map(cohorts)
-    for ttype, files_list in group_by_ttype(files, ttypes_map):
-        df = smregions.generate(files_list, qval_thresh=threshold)
-        df['CANCER_TYPE'] = ttype
-        data.append(df)
-
-    df = pd.concat(data)
     df.to_csv(output, sep='\t', index=False, compression="gzip")
 
 

@@ -56,13 +56,13 @@ def motifs(significant_regions):
     return selected_trans_pfam
 
 
-def generate(files_list, qval_thresh=0.1):
+def generate(files_list, thresh=0.1):
     """group a set of output files into a single dataframe"""
 
     df = []
     for input_file in files_list:
         df_dom = pd.read_csv(input_file, sep='\t')
-        df.append(df_dom[(df_dom['Q_VALUE'] < qval_thresh) & ((df_dom['OBSERVED_REGION'] / df_dom['MEAN_SIMULATED']) > 1)])
+        df.append(df_dom[(df_dom['Q_VALUE'] < thresh) & ((df_dom['OBSERVED_REGION'] / df_dom['MEAN_SIMULATED']) > 1)])
     df = pd.concat(df, axis=0)
 
     significant_regions = df['REGION'].unique().tolist()
@@ -80,7 +80,7 @@ def generate(files_list, qval_thresh=0.1):
 @click.argument('files', nargs=-1)
 def cli(files, output, threshold):
 
-    df = generate(files, qval_thresh=threshold)
+    df = generate(files, thresh=threshold)
 
     df.to_csv(output, sep='\t', index=False, compression="gzip")
 

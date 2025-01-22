@@ -1,8 +1,7 @@
-
 import click
 import pandas as pd
 
-
+# TODO: make class object for this script
 def matching_cluster(clusts, chr_, pos):
     """
     clusts: dataframe
@@ -57,8 +56,14 @@ def add_feature(df, specific_df, global_df):
     return df
 
 
-def generate(files, pval_thresh=0.05):
-    """group a set of output files into a single dataframe"""
+def generate(files, thresh=0.05):
+    """group a set of output files into a single dataframe
+    
+    Args
+    ====
+        files: list of input files
+        thresh: pvalue threshold
+    """
 
     df = pd.DataFrame()
 
@@ -92,7 +97,7 @@ def generate(files, pval_thresh=0.05):
 @click.argument('files', nargs=-1)
 def cli(files, output, threshold):
 
-    df = generate(files, pval_thresh=threshold)
+    df = generate(files, thresh=threshold)
 
     df.to_csv(output, sep='\t', index=False, compression="gzip")
 

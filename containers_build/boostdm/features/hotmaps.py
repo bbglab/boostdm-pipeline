@@ -33,7 +33,7 @@ def add_feature(df, specific_df, global_df):
     return df
 
 
-def generate(files, pval_thresh=0.05):
+def generate(files, thresh=0.05):
     """group a set of output files into a single dataframe"""
     df = pd.DataFrame()
 
@@ -61,7 +61,7 @@ def generate(files, pval_thresh=0.05):
 @click.argument('files', nargs=-1)
 def cli(files, output, threshold):
 
-    df = generate(files, pval_thresh=threshold)
+    df = generate(files, thresh=threshold)
 
     df.to_csv(output, sep='\t', index=False, compression="gzip")
 
