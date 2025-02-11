@@ -1,0 +1,3 @@
+
+class BoostDMError(Exception):
+    pass
