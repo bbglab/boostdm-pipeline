@@ -4,21 +4,22 @@ import matplotlib.pyplot as plt
 import xgboost as xgb
 from sklearn.metrics import matthews_corrcoef, roc_curve, roc_auc_score
 import warnings
-warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
-warnings.filterwarnings(module='sklearn*', action='ignore', category=RuntimeWarning)
-warnings.filterwarnings(module='matplotlib*', action='ignore', category=RuntimeWarning)
-warnings.filterwarnings(module='pandas*', action='ignore', category=RuntimeWarning)
-warnings.filterwarnings(module='ipykernel*', action='ignore', category=FutureWarning)
-warnings.filterwarnings(module='shap*', action='ignore', category=RuntimeWarning)
+
+warnings.filterwarnings(module="sklearn*", action="ignore", category=DeprecationWarning)
+warnings.filterwarnings(module="sklearn*", action="ignore", category=RuntimeWarning)
+warnings.filterwarnings(module="matplotlib*", action="ignore", category=RuntimeWarning)
+warnings.filterwarnings(module="pandas*", action="ignore", category=RuntimeWarning)
+warnings.filterwarnings(module="ipykernel*", action="ignore", category=FutureWarning)
+warnings.filterwarnings(module="shap*", action="ignore", category=RuntimeWarning)
 
 
-csqn_type_list = ['missense', 'nonsense', 'splicing', 'synonymous']
+csqn_type_list = ["missense", "nonsense", "splicing", "synonymous"]
 
 
 def encode_consequence_type(data):
-    data.loc[~data['csqn_type'].isin(csqn_type_list), 'csqn_type'] = 'none'
-    one_hot = pd.get_dummies(data, columns=['csqn_type'], prefix_sep='_')
-    one_hot.drop(columns=['csqn_type_none'], inplace=True)
+    data.loc[~data["csqn_type"].isin(csqn_type_list), "csqn_type"] = "none"
+    one_hot = pd.get_dummies(data, columns=["csqn_type"], prefix_sep="_")
+    one_hot.drop(columns=["csqn_type_none"], inplace=True)
     return one_hot
 
 
@@ -40,11 +41,15 @@ def encode_consequence_type(data, feature):
     return data
 """
 
-def encoding_test():
 
-    data_dict = {'feat1': [1., 2., 3.], 'feat2': [1.4, 3.1, 3.2], 'csqn_type': ['strange', 'none', 'splice_acceptor_variant']}
+def encoding_test():
+    data_dict = {
+        "feat1": [1.0, 2.0, 3.0],
+        "feat2": [1.4, 3.1, 3.2],
+        "csqn_type": ["strange", "none", "splice_acceptor_variant"],
+    }
     data = pd.DataFrame(data_dict)
-    df = encode_consequence_type(data, 'csqn_type')
+    df = encode_consequence_type(data, "csqn_type")
     print(df.columns)
 
 
@@ -69,6 +74,7 @@ def accuracy(tp, fp, tn, fn):
 
 # MCC Score
 
+
 def mcc_score(model, x_test, y_test, thresh=0.5):
     dtest = xgb.DMatrix(x_test.values, label=y_test.values)
     preds = model.predict_proba(x_test)[:, 1]
@@ -77,6 +83,7 @@ def mcc_score(model, x_test, y_test, thresh=0.5):
 
 
 # Evaluation: ROC Score
+
 
 def roc_score(model, x_test, y_test):
     dtest = xgb.DMatrix(x_test.values, label=y_test.values)
@@ -99,25 +106,31 @@ def roc_plot(myclassifier, x_test, y_test, title=True):
     plt.plot(fprs, tprs)
     s = roc_score(myclassifier, x_test, y_test)
     if title:
-        plt.title(f'ROC Curve: AUC = {np.round(s,2)}')
-    plt.xlabel('FPR')
-    plt.ylabel('TPR')
+        plt.title(f"ROC Curve: AUC = {np.round(s, 2)}")
+    plt.xlabel("FPR")
+    plt.ylabel("TPR")
 
 
 def compute_test_summary(myclassifier, x_test, y_test, thresh=0.5):
-    cols = ['predicted_prob', 'predicted_binary', 'true_condition']
+    cols = ["predicted_prob", "predicted_binary", "true_condition"]
     test_result = pd.DataFrame(columns=cols)
-    test_result['predicted_prob'] = myclassifier.predict_proba(x_test)[:, 1]
-    test_result['predicted_binary_thresh'] = test_result['predicted_prob'].apply(lambda x: int(x >= thresh))
-    test_result['predicted_binary_standard'] = myclassifier.predict(x_test)
-    test_result['true_condition'] = y_test.values
+    test_result["predicted_prob"] = myclassifier.predict_proba(x_test)[:, 1]
+    test_result["predicted_binary_thresh"] = test_result["predicted_prob"].apply(
+        lambda x: int(x >= thresh)
+    )
+    test_result["predicted_binary_standard"] = myclassifier.predict(x_test)
+    test_result["true_condition"] = y_test.values
     return test_result
 
 
 def deviance_loss(test_summary):
     df = test_summary.copy()
-    df['deviance'] = df.apply(lambda v: -2 * np.log(v['predicted_prob']) * (v['true_condition'] == 1) - 2 * np.log(1 - v['predicted_prob']) * (v['true_condition'] == 0), axis=1)
-    return df['deviance'].mean()
+    df["deviance"] = df.apply(
+        lambda v: -2 * np.log(v["predicted_prob"]) * (v["true_condition"] == 1)
+        - 2 * np.log(1 - v["predicted_prob"]) * (v["true_condition"] == 0),
+        axis=1,
+    )
+    return df["deviance"].mean()
 
 
 def evaluation(myclassifier, x_test, y_test, thresh=0.5):
@@ -129,18 +142,22 @@ def evaluation(myclassifier, x_test, y_test, thresh=0.5):
 
     test_summary = compute_test_summary(myclassifier, x_test, y_test, thresh=thresh)
 
-    contingency = pd.crosstab(test_summary.true_condition, test_summary.predicted_binary_thresh)
+    contingency = pd.crosstab(
+        test_summary.true_condition, test_summary.predicted_binary_thresh
+    )
 
     tp = contingency.loc[1, 1]
     fp = contingency.loc[0, 1]
     fn = contingency.loc[1, 0]
     tn = contingency.loc[0, 0]
 
-    return (contingency,
-            accuracy(tp, fp, tn, fn),
-            matthews(tp, fp, tn, fn),
-            deviance_loss(test_summary))
+    return (
+        contingency,
+        accuracy(tp, fp, tn, fn),
+        matthews(tp, fp, tn, fn),
+        deviance_loss(test_summary),
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     encoding_test()

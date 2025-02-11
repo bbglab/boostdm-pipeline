@@ -13,14 +13,14 @@ bw = pyBigWig.open(PHYLOP_FILE)
 def get_value(chrom, pos):
     chrom = str(chrom)
     if len(chrom) < 3:
-        chrom = 'chr' + str(chrom)
+        chrom = "chr" + str(chrom)
     with suppress(Exception):
         return np.float16(bw.values(chrom, pos - 1, pos)[0])
     return None
 
 
 def add_feature(df):
-    df['PhyloP'] = df.apply(lambda x: get_value(x['chr'], int(x['pos'])), axis=1)
+    df["PhyloP"] = df.apply(lambda x: get_value(x["chr"], int(x["pos"])), axis=1)
     return df
 
 
@@ -34,11 +34,11 @@ def func_test():
 
     """
 
-    chrom = 'chr10'
+    chrom = "chr10"
     pos = 8055860
     v = get_value(chrom, pos)
-    print('Chromosome={0}\nPosition={1}\nPhylop={2}'.format(chrom, str(pos), v))
+    print("Chromosome={0}\nPosition={1}\nPhylop={2}".format(chrom, str(pos), v))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     func_test()

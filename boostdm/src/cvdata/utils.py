@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 
@@ -21,9 +20,9 @@ def sort_filter(x_train, x_test, y_train, y_test):
 
     # remove duplicates from test set
 
-    x_test['chr'] = x_test['chr'].astype(str)
-    x_test['pos'] = x_test['pos'].astype(int)
-    x_test = x_test.drop_duplicates(subset=['pos', 'alt'], keep='first')
+    x_test["chr"] = x_test["chr"].astype(str)
+    x_test["pos"] = x_test["pos"].astype(int)
+    x_test = x_test.drop_duplicates(subset=["pos", "alt"], keep="first")
     y_test = y_test.loc[x_test.index]
 
     # Balance the test set
@@ -47,7 +46,7 @@ def sort_filter(x_train, x_test, y_train, y_test):
     y_test = y_test.loc[balanced_idx].copy()
 
     # feature labels in standard order
-    avoid = ['chr', 'pos', 'ref', 'alt']
+    avoid = ["chr", "pos", "ref", "alt"]
     x_train = x_train[avoid + COLUMNS_TRAINING].copy()
     x_test = x_test[avoid + COLUMNS_TRAINING].copy()
 
@@ -55,9 +54,8 @@ def sort_filter(x_train, x_test, y_train, y_test):
 
 
 def tuple_join(t, s):
-
     out = []
-    assert (len(t) == len(s))
+    assert len(t) == len(s)
     for left, right in zip(t, s):
         df = pd.concat([left, right], sort=True, axis=0)
         df = df.reset_index(drop=True)

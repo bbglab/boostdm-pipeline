@@ -1,22 +1,16 @@
-import sys
-
 import random
-from functools import reduce
-import operator
 
 import numpy as np
 from scipy.optimize import minimize
-
 from src.oncotree import Oncotree
 
 
 def get_mutations(mutations, ttype, gene):
-
     tree = Oncotree()
     cohorts = tree.get_cohorts(ttype)
-    df = mutations[(mutations['COHORT'].isin(cohorts)) & (mutations['gene'] == gene)]
-    df['chr'] = df['chr'].astype(str)
-    df['pos'] = df['pos'].astype(int)
+    df = mutations[(mutations["COHORT"].isin(cohorts)) & (mutations["gene"] == gene)]
+    df["chr"] = df["chr"].astype(str)
+    df["pos"] = df["pos"].astype(int)
     return df
 
 
@@ -35,9 +29,14 @@ def get_downsampling_counts(samples_info, df_observed, iterations=10, n_grid=10)
         muts_list = []
         for _ in range(iterations):
             selected_samples = random.sample(samples_info, int(value))
-            muts = df_observed[
-                (df_observed['sampleID'].isin(selected_samples)) & (df_observed['impact'] != 'Synonymous')
-            ][['chr', 'pos', 'mut']].drop_duplicates().shape[0]
+            muts = (
+                df_observed[
+                    (df_observed["sampleID"].isin(selected_samples))
+                    & (df_observed["impact"] != "Synonymous")
+                ][["chr", "pos", "mut"]]
+                .drop_duplicates()
+                .shape[0]
+            )
             muts_list.append(muts)
         unique_counts.append(muts_list)
     return grid, unique_counts
@@ -48,13 +47,13 @@ def curve_fit(func, x_data, y_data, seed_params=None, weights=None, bounds=None)
 
     if weights is None:
         weights = np.ones_like(x_data)
-    assert(len(weights) == len(x_data))
+    assert len(weights) == len(x_data)
 
     def cost(params):
         predictions = np.array([func(x, *params) for x in x_data])
         return np.dot(weights, (predictions - y_data) ** 2)
 
-    res = minimize(cost, seed_params, bounds=bounds, options={'disp': False})
+    res = minimize(cost, seed_params, bounds=bounds, options={"disp": False})
     return cost(res.x), res.x
 
 
@@ -75,7 +74,6 @@ def discovery_index(total_samples, *params):
 
 
 def bootstrap_data(unique_counts, iterations=10, ngrid=7):
-
     y_data_bootstrap = []
     for _ in range(iterations):
         y_sample = []
@@ -87,7 +85,6 @@ def bootstrap_data(unique_counts, iterations=10, ngrid=7):
 
 
 def fitting_with_bootstrap(grid, unique_counts, iterations=10, ngrid=7):
-
     params_pool = []
     y_data_bootstrap = bootstrap_data(unique_counts, iterations=iterations, ngrid=ngrid)
 
@@ -98,11 +95,15 @@ def fitting_with_bootstrap(grid, unique_counts, iterations=10, ngrid=7):
     # setting optimization constraints
     bounds = [(unique_counts[-1][-1] / 2, None), (0, None)]
 
-    for i, y in enumerate(y_data_bootstrap):
-        error, params = curve_fit(master_func, grid, y,
-                                  seed_params=[y[-1], 0.05],
-                                  weights=weights,
-                                  bounds=bounds)
+    for _, y in enumerate(y_data_bootstrap):
+        _error, params = curve_fit(
+            master_func,
+            grid,
+            y,
+            seed_params=[y[-1], 0.05],
+            weights=weights,
+            bounds=bounds,
+        )
         params_pool += [list(params)]
 
     total_samples = grid[-1]
@@ -112,12 +113,15 @@ def fitting_with_bootstrap(grid, unique_counts, iterations=10, ngrid=7):
 
 
 def discovery_index_with_bootstrap(samples, mutations, iterations=10, ngrid=10):
-
     np.random.seed(42)
     random.seed(42)
 
-    grid, unique_counts = get_downsampling_counts(samples, mutations, iterations=iterations, n_grid=ngrid)
-    params, disc_ind = fitting_with_bootstrap(grid, unique_counts, iterations=iterations, ngrid=ngrid)
+    grid, unique_counts = get_downsampling_counts(
+        samples, mutations, iterations=iterations, n_grid=ngrid
+    )
+    params, disc_ind = fitting_with_bootstrap(
+        grid, unique_counts, iterations=iterations, ngrid=ngrid
+    )
     return params, disc_ind, grid, unique_counts
 
 
@@ -130,21 +134,38 @@ def discovery_run(samples, mutations, iterations=20, ngrid=20):
         interquartile range discovery index
     """
 
-    params_list, disc_ind, grid, unique_counts = discovery_index_with_bootstrap(samples, mutations, iterations, ngrid)
+    _params_list, disc_ind, grid, unique_counts = discovery_index_with_bootstrap(
+        samples, mutations, iterations, ngrid
+    )
     median = np.nanmedian(disc_ind)
-    interquartile_range = (np.nanquantile(disc_ind, 0.25), np.nanquantile(disc_ind, 0.75))
+    interquartile_range = (
+        np.nanquantile(disc_ind, 0.25),
+        np.nanquantile(disc_ind, 0.75),
+    )
     return grid[-1], unique_counts[-1][-1], median, interquartile_range
 
 
-def plot_fit(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, color_scatter='grey', color_curve='darkred', title=None):
-    
+def plot_fit(
+    gene,
+    ttype,
+    samples,
+    mutations,
+    ax,
+    iterations=100,
+    ngrid=20,
+    color_scatter="grey",
+    color_curve="darkred",
+    title=None,
+):
     np.random.seed(42)
     random.seed(42)
 
     samp = samples[ttype]
     muts = get_mutations(mutations, ttype, gene)
 
-    params, disc, grid, unique_counts = discovery_index_with_bootstrap(samp, muts, iterations, ngrid)
+    params, disc, grid, unique_counts = discovery_index_with_bootstrap(
+        samp, muts, iterations, ngrid
+    )
 
     unique_np = np.array(unique_counts)
 
@@ -155,44 +176,66 @@ def plot_fit(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, colo
             ax.scatter(grid, unique_np[:, i], color=color_scatter, s=5, alpha=0.07)
 
     x = np.linspace(0, grid[-1], num=50)
-    y_mean = list(map(np.nanmean, zip(*map(lambda p: [master_func(s, *p) for s in x], params))))
+    y_mean = list(
+        map(np.nanmean, zip(*map(lambda p: [master_func(s, *p) for s in x], params)))
+    )
     score = np.round(np.nanmedian(disc), 2)
-    
-    assert(score != np.nan)
-    
-    ax.plot(x, y_mean, alpha=1, color=color_curve, label=f'{ttype}: discovery={score}')
 
-    ax.set_xlabel('no. samples')
-    ax.set_ylabel('no. unique mutations')
+    assert score != np.nan
+
+    ax.plot(x, y_mean, alpha=1, color=color_curve, label=f"{ttype}: discovery={score}")
+
+    ax.set_xlabel("no. samples")
+    ax.set_ylabel("no. unique mutations")
     if title is None:
-            title = f'Mutation Downsampling\n{gene} ({ttype})'
-    
+        title = f"Mutation Downsampling\n{gene} ({ttype})"
+
     ax.set_title(title)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
 
-def plot_fit_multiple(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, color_curve='darkred', title=None):
-    
+def plot_fit_multiple(
+    gene,
+    ttype,
+    samples,
+    mutations,
+    ax,
+    iterations=100,
+    ngrid=20,
+    color_curve="darkred",
+    title=None,
+):
     np.random.seed(42)
     random.seed(42)
 
     samp = samples[ttype]
     muts = get_mutations(mutations, ttype, gene)
 
-    params, disc, grid, unique_counts = discovery_index_with_bootstrap(samp, muts, iterations, ngrid)
+    params, disc, grid, unique_counts = discovery_index_with_bootstrap(
+        samp, muts, iterations, ngrid
+    )
 
-    unique_np = np.array(unique_counts)
+    _unique_np = np.array(unique_counts)
 
     x = np.linspace(0, grid[-1], num=50)
-    y_mean = list(map(np.nanmean, zip(*map(lambda p: [master_func(s, *p) for s in x], params))))
+    y_mean = list(
+        map(np.nanmean, zip(*map(lambda p: [master_func(s, *p) for s in x], params)))
+    )
     score = np.round(np.median(disc), 2)
-    ax.plot(x, y_mean, alpha=0.8, lw=3, color=color_curve, label=f'{ttype}: discovery={score}')
+    ax.plot(
+        x,
+        y_mean,
+        alpha=0.8,
+        lw=3,
+        color=color_curve,
+        label=f"{ttype}: discovery={score}",
+    )
     ax.scatter([x[-1]], [y_mean[-1]], s=50, color=color_curve, alpha=0.8)
-    ax.set_xlabel('no. samples')
-    ax.set_ylabel('no. unique mutations')
+    ax.set_xlabel("no. samples")
+    ax.set_ylabel("no. unique mutations")
     if title is None:
-        title = f'Mutation Downsampling\n{gene} ({ttype})'
+        title = f"Mutation Downsampling\n{gene} ({ttype})"
     ax.set_title(title)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)

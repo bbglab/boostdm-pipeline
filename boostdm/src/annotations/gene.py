@@ -1,40 +1,57 @@
 import click
 import pandas as pd
 
-pd.set_option('display.max_columns', 500)
-
+from src.annotations.utils import (
+    encode_consequence_type,
+    rectify_missense,
+    rectify_splicing,
+    rectify_synonymous,
+)
+from src.features import (
+    aachange,
+    clustl,
+    consequence_type,
+    exon,
+    hotmaps,
+    phylop,
+    ptms,
+    smregions,
+)
 from src.globals import DRIVERS_PATH
 from src.oncotree import Oncotree
-from src.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
-from src.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions
+
+pd.set_option("display.max_columns", 500)
 
 
-drivers = pd.read_csv(DRIVERS_PATH, sep='\t')
-dg = drivers.groupby('SYMBOL').agg({'CANCER_TYPE': list}).reset_index()
-gene_ttype_map = dict(zip(dg['SYMBOL'].values, dg['CANCER_TYPE'].values))
+drivers = pd.read_csv(DRIVERS_PATH, sep="\t")
+dg = drivers.groupby("SYMBOL").agg({"CANCER_TYPE": list}).reset_index()
+gene_ttype_map = dict(zip(dg["SYMBOL"].values, dg["CANCER_TYPE"].values))
 
 
 def read_muts(path_data):
+    muts = pd.read_csv(path_data, sep="\t")
+    muts.rename(
+        columns={
+            "Chromosome": "chr",
+            "Position": "pos",
+            "Alternate": "alt",
+            "Gene": "ENSEMBL_GENE",
+            "Feature": "ENSEMBL_TRANSCRIPT",
+            "Consequence": "csqn_type",
+            "Symbol": "gene",
+            "Canonical": "CANONICAL",
+            "Mane_select": "MANE_SELECT",
+        },
+        inplace=True,
+    )
 
-    muts = pd.read_csv(path_data, sep='\t')
-    muts.rename(columns={'Chromosome': 'chr',
-                         'Position': 'pos',
-                         'Alternate': 'alt',
-                         'Gene': 'ENSEMBL_GENE',
-                         'Feature': 'ENSEMBL_TRANSCRIPT',
-                         'Consequence': 'csqn_type',
-                         'Symbol': 'gene',
-                         'Canonical': 'CANONICAL',
-                         'Mane_select': 'MANE_SELECT'}, inplace=True)
-
-
-    muts = muts[muts['MANE_SELECT'] != '-']
+    muts = muts[muts["MANE_SELECT"] != "-"]
     if muts.shape[0] == 0:
-        raise Exception('There are not mutations in the canonical transcript')
+        raise Exception("There are not mutations in the canonical transcript")
 
-    muts['chr'] = muts['chr'].astype(str)
-    muts['chr'] = muts['chr'].str.replace('chr', '')
-    muts = muts[(muts['alt'].isin(['A', 'C', 'T', 'G']))]  # SNV
+    muts["chr"] = muts["chr"].astype(str)
+    muts["chr"] = muts["chr"].str.replace("chr", "")
+    muts = muts[(muts["alt"].isin(["A", "C", "T", "G"]))]  # SNV
 
     return muts
 
@@ -55,7 +72,6 @@ def iter_tree(tree, ttype):
 
 
 def set_aachange(row):
-
     if row["Protein_position"] == "-":
         return "."
     else:
@@ -89,29 +105,38 @@ def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
     related_ttypes = list(iter_tree(tree, ttype))
 
     # Add linear clusters
-    clustl_global_data = pd.read_csv(clustl_path, sep='\t')
-    clustl_cancer_data = clustl_global_data[clustl_global_data['CANCER_TYPE'].isin(related_ttypes)]
-    clustl_cancer_data = clustl_cancer_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
-    clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
+    clustl_global_data = pd.read_csv(clustl_path, sep="\t")
+    clustl_cancer_data = clustl_global_data[
+        clustl_global_data["CANCER_TYPE"].isin(related_ttypes)
+    ]
+    clustl_cancer_data = clustl_cancer_data[
+        ["CHROMOSOME", "5_COORD", "3_COORD", "SCORE"]
+    ]
+    clustl_global_data = clustl_global_data[
+        ["CHROMOSOME", "5_COORD", "3_COORD", "SCORE"]
+    ]
     df = clustl.add_feature(df, clustl_cancer_data, clustl_global_data)
 
     # Add 3D clusters
-    hotmaps_global_data = pd.read_csv(hotmaps_path, sep='\t')
-    hotmaps_cancer_data = hotmaps_global_data[hotmaps_global_data['CANCER_TYPE'].isin(related_ttypes)]
-    hotmaps_cancer_data = hotmaps_cancer_data[['chromosome', 'pos']]
-    hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
+    hotmaps_global_data = pd.read_csv(hotmaps_path, sep="\t")
+    hotmaps_cancer_data = hotmaps_global_data[
+        hotmaps_global_data["CANCER_TYPE"].isin(related_ttypes)
+    ]
+    hotmaps_cancer_data = hotmaps_cancer_data[["chromosome", "pos"]]
+    hotmaps_global_data = hotmaps_global_data[["chromosome", "pos"]]
     df = hotmaps.add_feature(df, hotmaps_cancer_data, hotmaps_global_data)
 
     # run add_domains
-    smregions_global_data = pd.read_csv(smregions_path, sep='\t')
-    smregions_cancer_data= smregions_global_data[smregions_global_data['CANCER_TYPE'].isin(related_ttypes)]
+    smregions_global_data = pd.read_csv(smregions_path, sep="\t")
+    smregions_cancer_data = smregions_global_data[
+        smregions_global_data["CANCER_TYPE"].isin(related_ttypes)
+    ]
     df = smregions.add_feature(df, smregions_cancer_data, smregions_global_data)
 
     return df
 
 
 def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions):
-
     # read mutations from the VEP output
     muts = read_muts(mutations_file)
 
@@ -122,10 +147,12 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
     df = features(muts, tumor, path_clustl, path_hotmaps, path_smregions)
 
     # keep mutations with specified consequence type
-    df = df[df['csqn_type'].isin(['synonymous', 'missense', 'nonsense', 'splicing'])]
+    df = df[df["csqn_type"].isin(["synonymous", "missense", "nonsense", "splicing"])]
 
     if df.shape[0] == 0:
-        raise Exception("There are not 'synonymous', 'missense', 'nonsense', or 'splicing' mutations")
+        raise Exception(
+            "There are not 'synonymous', 'missense', 'nonsense', or 'splicing' mutations"
+        )
 
     df = encode_consequence_type(df)
     df = rectify_synonymous(df)
@@ -136,20 +163,38 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
 
 
 @click.command()
-@click.option('--gene', help="Gene symbol", type=str, required=True)
-@click.option('--ttype', help="Tumor type acronym", type=str, required=True)
-@click.option('--mutations', help="Path to the input mutations file from vep output",
-              type=click.Path(exists=True), required=True)
-@click.option('--clustl-group', help="CLUSTL clusters by ttype",
-              type=click.Path(exists=True), required=True)
-@click.option('--hotmaps-group', help="HotMAPs clusters by ttype",
-              type=click.Path(exists=True),required=True)
-@click.option('--smregions-group', help="SMRegions domains by ttype",
-              type=click.Path(exists=True), required=True)
+@click.option("--gene", help="Gene symbol", type=str, required=True)
+@click.option("--ttype", help="Tumor type acronym", type=str, required=True)
+@click.option(
+    "--mutations",
+    help="Path to the input mutations file from vep output",
+    type=click.Path(exists=True),
+    required=True,
+)
+@click.option(
+    "--clustl-group",
+    help="CLUSTL clusters by ttype",
+    type=click.Path(exists=True),
+    required=True,
+)
+@click.option(
+    "--hotmaps-group",
+    help="HotMAPs clusters by ttype",
+    type=click.Path(exists=True),
+    required=True,
+)
+@click.option(
+    "--smregions-group",
+    help="SMRegions domains by ttype",
+    type=click.Path(exists=True),
+    required=True,
+)
 def cli(gene, ttype, mutations, clustl_group, hotmaps_group, smregions_group):
     df = build_table(mutations, ttype, clustl_group, hotmaps_group, smregions_group)
-    df.to_csv(f'{gene}.{ttype}.annotated.tsv.gz', sep='\t', index=False, compression="gzip")
+    df.to_csv(
+        f"{gene}.{ttype}.annotated.tsv.gz", sep="\t", index=False, compression="gzip"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
