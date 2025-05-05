@@ -148,14 +148,34 @@ process RenameSMREGIONS {
 DNDS_FILES = Channel.fromPath("${INTOGEN_DATASETS}/steps/dndscv/*.dndscv.tsv.gz")
 OUT_DNDSCV = DNDS_FILES.map{it -> [it.baseName.split('\\.')[0], it]}
 DNDS_ANNOTMUTS_FILES = Channel.fromPath("${INTOGEN_DATASETS}/steps/dndscv/*.dndscv_annotmuts.tsv.gz")
-DNDS_ANNOTMUTS_FILES.into{ DNDS_ANNOTMUTS_FILES1; DNDS_ANNOTMUTS_FILES2 }
-OUT_DNDSCV_ANNOTMUTS = DNDS_ANNOTMUTS_FILES1.map{it -> [it.baseName.split('\\.')[0], it]}
+OUT_DNDSCV_ANNOTMUTS = DNDS_ANNOTMUTS_FILES.map{it -> [it.baseName.split('\\.')[0], it]}
 
 
 /* MutRate */
 
 MUTRATE_FILES = Channel.fromPath("${INTOGEN_DATASETS}/steps/boostDM/mutrate/*.mutrate.json")
 OUT_MUTRATE = MUTRATE_FILES.map{it -> [it.baseName.split('\\.')[0], it]}
+
+
+/* Create json file with vetting of consequence types per gene */
+/* It will be subsequently used in step 04_prediction.nf to set a post-processing driver mask */
+
+process CountCsqnType {
+	tag "Counting consequence types of observed mutations per gene"
+	label "boostdm"
+	publishDir "${OUTPUT}", mode: 'copy'
+
+	output:
+		path(output) into CSQN_TYPE_VETTING
+	
+	script:
+		output = "csqn_type_vetting.json"
+		"""
+		runner.sh annotations/csqn_type.py \
+			--output ${output} \
+			--percentile 10
+		"""
+}
 
 
 /* Create datasets */
@@ -190,7 +210,7 @@ process CreateDatasets {
 			--smregions-group-path ${groupSMRegions} \
 			--splits ${params.boostdm.bootstrapSplits} \
 			--threshold ${params.boostdm.xsThresh} \
-                        --out ${output}
+            --out ${output}
 		"""
 }
 
