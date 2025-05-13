@@ -73,7 +73,8 @@ process PredictSaturation {
                 --models-folder ${OUTPUT}/training_meta \
                 --evaluations-folder ${OUTPUT}/evaluation \
                 --model-selection ${model} \
-                --high-quality-only
+                --high-quality-only \
+                --csqn-type-vetting ${OUTPUT}/csqn_type_vetting.json
         """
 }
 

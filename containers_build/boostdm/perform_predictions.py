@@ -4,6 +4,7 @@
 import functools
 import gzip
 import os
+import json
 import warnings
 
 import click
@@ -170,6 +171,24 @@ def predict_with_model(mutations, model, models_folder, evaluations_folder):
     return _predict(mutations, models_folder, evaluations_folder), ttype
 
 
+def get_vetting_mask(r, csqn_type_list):
+
+    """
+    Returns False if the mutation belongs to a vetted csqn type.
+    Otherwise, it returns boostDM_class 
+    """
+
+    miss = bool(r['csqn_type_missense']) and ('missense' in csqn_type_list)
+    non = bool(r['csqn_type_nonsense']) and ('nonsense' in csqn_type_list)
+    spl = bool(r['csqn_type_splicing']) and ('splicing' in csqn_type_list)
+
+    if miss or non or spl:
+        return False
+    else:
+        return r['boostDM_class_raw']
+    
+
+
 @click.command()
 @click.option('--muts', type=click.Path(exists=True), help="File with the annotated mutations", required=True)
 @click.option('--gene', type=str, help="gene symbol", required=True)
@@ -178,7 +197,8 @@ def predict_with_model(mutations, model, models_folder, evaluations_folder):
 @click.option('--evaluations-folder', type=click.Path(exists=True), help="Path to the folder where the evaluations are", required=True)
 @click.option('--model-selection', type=str, help="Either the path to the model selection dict, or the gene to be used", required=True)
 @click.option('--high-quality-only', is_flag=True, show_default=True, default=False, help="Prediction only if matching models are high-quality")
-def cli(muts, gene, tumor_type, models_folder, evaluations_folder, model_selection, high_quality_only):
+@click.option('--csqn-type-vetting', type=click.Path(), help="JSON with vetted csqntypes per gene")
+def cli(muts, gene, tumor_type, models_folder, evaluations_folder, model_selection, high_quality_only, csqn_type_vetting):
     
     df = pd.read_csv(muts, sep='\t')
     df_mutations = df[df['gene'] == gene]
@@ -201,10 +221,17 @@ def cli(muts, gene, tumor_type, models_folder, evaluations_folder, model_selecti
     output_cols = COLUMNS_OUTPUT + COLUMNS_SHAP
     output_file = f'{gene}.model.{selected_model_ttype}.features.{tumor_type}.prediction.tsv.gz'
 
-    df[output_cols].to_csv(output_file,
-                           index=False,
-                           compression="gzip",
-                           sep="\t")
+    # vetting of driver prediction
+    # unfrequently observed csqn_type -> non-driver
+
+    with open(csqn_type_vetting, 'rt') as f:
+        vetting_dict = json.load(f)
+    df['boostDM_class_raw'] = df.loc[:, 'boostDM_class']
+    df['boostDM_class'] = df.apply(lambda r: get_vetting_mask(r, vetting_dict[gene]), axis=1)
+
+    # write output file
+
+    df[output_cols + ['boostDM_class_raw']].to_csv(output_file, index=False, compression="gzip", sep="\t")
 
 
 if __name__ == '__main__':
