@@ -25,9 +25,22 @@ csqn_type_dict = {
 @click.option('--output', type=click.Path())
 @click.option('--percentile', type=int)
 def cli(output, percentile=5):
+    """Predicted driver mutations are vetted to non-driver if the following 
+    two conditions are satisfied:
+    - the mutation is either nonsense or splicing, herein "csqn-type"
+    - the mutation is in a gene such that either:
+        - log csqn-type observed mutation count in that gene == 0
+        - log fold-change csqn-type observed mutation count vs observed syn count is 
+          within a lower percentile among all possible driver genes
+    
+    Returns a dictionary: gene -> list of vetted csqn-types for that gene
+    
+    Arguments:
+    output -- json filename
+    percentile -- percentile threshold (default 5.)
+    """
 
     # retrieve mutations
-
     total_df = []
     for fn in glob.glob(f"{INTOGEN_DATASETS}/steps/dndscv/*.dndscv_annotmuts.tsv.gz"):
         df = pd.read_csv(fn, sep='\t')
@@ -40,18 +53,15 @@ def cli(output, percentile=5):
     total_snvs = total_df[total_df['impact'] != 'non_snv']  # snvs only
 
     # mutation count dict
-
     d = total_snvs.groupby(['gene', 'impact']).size().to_dict()
 
-    gene_dict = {}  # dict: gene -> dict csqn_type -> mut count
+    gene_dict = {}  # dict: gene -> csqn_type list
     for k, v in d.items():
         g = k[0]
         gene_dict[g] = {**gene_dict.get(g, {}), **{k[1]: v}}
 
-    # compute delta log counts and TMBs
-
+    # compute delta log counts and log TMB
     y, z = [], []
-    tmby, tmbz = [], []
     for g, v in gene_dict.items():
         deltanon = np.log10(v.get('nonsense', 1)) - np.log10(v['synonymous'])
         deltaspl = np.log10(v.get('splicing', 1)) - np.log10(v['synonymous'])
