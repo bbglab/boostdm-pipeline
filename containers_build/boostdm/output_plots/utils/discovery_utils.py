@@ -10,9 +10,9 @@ from scipy.optimize import minimize
 from boostdm.oncotree import Oncotree
 
 
-def get_mutations(mutations, ttype, gene):
+def get_mutations(mutations, ttype, gene, top_level):
 
-    tree = Oncotree()
+    tree = Oncotree(top_level)
     cohorts = tree.get_cohorts(ttype)
     df = mutations[(mutations['COHORT'].isin(cohorts)) & (mutations['gene'] == gene)]
     df['chr'] = df['chr'].astype(str)
@@ -136,13 +136,13 @@ def discovery_run(samples, mutations, iterations=20, ngrid=20):
     return grid[-1], unique_counts[-1][-1], median, interquartile_range
 
 
-def plot_fit(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, color_scatter='grey', color_curve='darkred', title=None):
+def plot_fit(gene, ttype, top_level, samples, mutations, ax, iterations=100, ngrid=20, color_scatter='grey', color_curve='darkred', title=None):
     
     np.random.seed(42)
     random.seed(42)
 
     samp = samples[ttype]
-    muts = get_mutations(mutations, ttype, gene)
+    muts = get_mutations(mutations, ttype, gene, top_level)
 
     params, disc, grid, unique_counts = discovery_index_with_bootstrap(samp, muts, iterations, ngrid)
 
@@ -172,13 +172,13 @@ def plot_fit(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, colo
     ax.spines['right'].set_visible(False)
 
 
-def plot_fit_multiple(gene, ttype, samples, mutations, ax, iterations=100, ngrid=20, color_curve='darkred', title=None):
+def plot_fit_multiple(gene, ttype, top_level, samples, mutations, ax, iterations=100, ngrid=20, color_curve='darkred', title=None):
     
     np.random.seed(42)
     random.seed(42)
 
     samp = samples[ttype]
-    muts = get_mutations(mutations, ttype, gene)
+    muts = get_mutations(mutations, ttype, gene, top_level)
 
     params, disc, grid, unique_counts = discovery_index_with_bootstrap(samp, muts, iterations, ngrid)
 

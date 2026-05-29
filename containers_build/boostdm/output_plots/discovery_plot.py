@@ -35,7 +35,8 @@ def config_params(font_size=12):
 @click.command()
 @click.option('--gene', type=str)
 @click.option('--ttmodel', type=str)
-def cli(gene, ttmodel):
+@click.option('--top_level', type=str, default='CANCER')
+def cli(gene, ttmodel, top_level):
 
     config_params()
 
@@ -51,7 +52,7 @@ def cli(gene, ttmodel):
     # plot
 
     fig, ax = plt.subplots(figsize=(3, 3))
-    plot_fit(gene, ttmodel, samples, mutations, ax)
+    plot_fit(gene, ttmodel, top_level, samples, mutations, ax)
     plt.savefig(f'{gene}.{ttmodel}.bending.svg', bbox_inches='tight', dpi=300)
     plt.savefig(f'{gene}.{ttmodel}.bending.png', bbox_inches='tight', dpi=300)
     plt.show()
