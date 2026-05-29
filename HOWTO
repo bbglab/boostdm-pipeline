@@ -4,7 +4,7 @@ interactive
 
 # enter conda environment
 
-conda activate boostdm-new-pipeline
+source activate boostdm-new-pipeline
 
 # check the paths for input and output in the boostdm.nf script
 
