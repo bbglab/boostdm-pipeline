@@ -6,7 +6,7 @@ pd.set_option('display.max_columns', 500)
 from boostdm.globals import DRIVERS_PATH
 from boostdm.oncotree import Oncotree
 from boostdm.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
-from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions
+from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, oncodrive3d, smregions
 
 
 drivers = pd.read_csv(DRIVERS_PATH, sep='\t')
@@ -65,7 +65,7 @@ def set_aachange(row):
         return str(wt_aa) + str(pos) + str(mt_aa)
 
 
-def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
+def features(df, ttype, clustl_path, o3d_path, smregions_path, top_level):
     """add complete set of features"""
 
     # add PhyloP score
@@ -85,7 +85,7 @@ def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
 
     # tumor-type grouping:
 
-    tree = Oncotree()
+    tree = Oncotree(top_level)
     related_ttypes = list(iter_tree(tree, ttype))
 
     # Add linear clusters
@@ -96,11 +96,11 @@ def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
     df = clustl.add_feature(df, clustl_cancer_data, clustl_global_data)
 
     # Add 3D clusters
-    hotmaps_global_data = pd.read_csv(hotmaps_path, sep='\t')
-    hotmaps_cancer_data = hotmaps_global_data[hotmaps_global_data['CANCER_TYPE'].isin(related_ttypes)]
-    hotmaps_cancer_data = hotmaps_cancer_data[['chromosome', 'pos']]
-    hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
-    df = hotmaps.add_feature(df, hotmaps_cancer_data, hotmaps_global_data)
+    o3d_global_data = pd.read_csv(o3d_path, sep='\t')
+    o3d_cancer_data = o3d_global_data[o3d_global_data['CANCER_TYPE'].isin(related_ttypes)]
+    o3d_cancer_data = o3d_cancer_data[['chromosome', 'pos']]
+    o3d_global_data = o3d_global_data[['chromosome', 'pos']]
+    df = oncodrive3d.add_feature(df, o3d_cancer_data, o3d_global_data)
 
     # run add_domains
     smregions_global_data = pd.read_csv(smregions_path, sep='\t')
@@ -110,7 +110,7 @@ def features(df, ttype, clustl_path, hotmaps_path, smregions_path):
     return df
 
 
-def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions):
+def build_table(mutations_file, tumor, path_clustl, path_o3d, path_smregions, top_level):
 
     # read mutations from the VEP output
     muts = read_muts(mutations_file)
@@ -119,7 +119,7 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
     muts.reset_index(drop=True, inplace=True)
 
     # annotate mutations
-    df = features(muts, tumor, path_clustl, path_hotmaps, path_smregions)
+    df = features(muts, tumor, path_clustl, path_o3d, path_smregions, top_level)
 
     # keep mutations with specified consequence type
     df = df[df['csqn_type'].isin(['synonymous', 'missense', 'nonsense', 'splicing'])]
@@ -142,12 +142,14 @@ def build_table(mutations_file, tumor, path_clustl, path_hotmaps, path_smregions
               type=click.Path(exists=True), required=True)
 @click.option('--clustl-group', help="CLUSTL clusters by ttype",
               type=click.Path(exists=True), required=True)
-@click.option('--hotmaps-group', help="HotMAPs clusters by ttype",
+@click.option('--oncodrive3d-group', help="Oncodrive3D clusters by ttype",
               type=click.Path(exists=True),required=True)
 @click.option('--smregions-group', help="SMRegions domains by ttype",
               type=click.Path(exists=True), required=True)
-def cli(gene, ttype, mutations, clustl_group, hotmaps_group, smregions_group):
-    df = build_table(mutations, ttype, clustl_group, hotmaps_group, smregions_group)
+@click.option('--top-level', help="Name of the top level tumor type in the oncotree hierarchy", 
+              type=str, required=True)
+def cli(gene, ttype, mutations, clustl_group, oncodrive3d_group, smregions_group, top_level):
+    df = build_table(mutations, ttype, clustl_group, oncodrive3d_group, smregions_group, top_level)
     df.to_csv(f'{gene}.{ttype}.annotated.tsv.gz', sep='\t', index=False, compression="gzip")
 
 

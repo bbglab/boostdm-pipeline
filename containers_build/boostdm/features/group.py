@@ -4,7 +4,7 @@ from os import path
 import click
 import pandas as pd
 
-from boostdm.features import clustl, hotmaps, smregions
+from boostdm.features import clustl, oncodrive3d, smregions
 
 
 @click.group()
@@ -53,12 +53,12 @@ def group_clustl(files, output, threshold, cohorts):
 @click.option('--threshold', default=0.05, type=float, help='Pvalue threshold')
 @click.option('--cohorts', type=click.Path(), required=True, help='cohorts file')
 @click.argument('files', nargs=-1)
-def group_hotmaps(files, output, threshold, cohorts):
+def group_oncodrive3d(files, output, threshold, cohorts):
 
     data = []
     ttypes_map = load_ttypes_map(cohorts)
     for ttype, files_list in group_by_ttype(files, ttypes_map):
-        df = hotmaps.generate(files_list, pval_thresh=threshold)
+        df = oncodrive3d.generate(files_list, pval_thresh=threshold)
         df['CANCER_TYPE'] = ttype
         data.append(df)
 

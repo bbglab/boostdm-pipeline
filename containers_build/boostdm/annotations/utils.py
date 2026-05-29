@@ -21,7 +21,7 @@ def rectify_synonymous(df):
 
     ind = df.index[df['csqn_type_synonymous'] == 1].tolist()
     forbidden = [
-        'CLUSTL', 'HotMaps', 'smRegions',
+        'CLUSTL', 'Oncodrive3D', 'smRegions',
         'nmd',
         'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination'
         ]
@@ -42,7 +42,7 @@ def rectify_missense(df):
 def rectify_splicing(df):
 
     ind = df.index[df['csqn_type_splicing'] == 1].tolist()
-    forbidden = ['HotMaps', 'nmd', 'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination']
+    forbidden = ['Oncodrive3D', 'nmd', 'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination']
     for c in forbidden:
         df.loc[ind, c] = 0
     return df

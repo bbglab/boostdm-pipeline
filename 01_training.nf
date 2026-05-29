@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 
-/* COHORTS SUMMART */
+/* COHORTS SUMMARY */
 
 COHORTS_SUMMARY = Channel.fromPath("${INTOGEN_DATASETS}/cohorts.tsv")
 COHORTS_SUMMARY.into{ COHORTS_SUMMARY1; COHORTS_SUMMARY2; COHORTS_SUMMARY3;  COHORTS_SUMMARY4}
@@ -34,7 +34,7 @@ process GroupFeaturesCLUSTL {
 	script:
 		output = "clustl.tsv.gz"
 		"""
-		runner.sh features/group.py group-clustl \
+        runner.sh features/group.py group-clustl \
 			--output ${output} \
 			--threshold 0.05 \
 			--cohorts ${cohorts} \
@@ -47,27 +47,27 @@ CLUSTL_GROUP_V = CLUSTL_GROUP.first()
 OUT_ONCODRIVECLUSTL_CLUSTERS = CLUSTL_OUT2.map{it -> [it.baseName.split('\\.')[0], it]}
 
 
-/* HOTMAPS */
+/* O3D */
 
-HOTMAPS_OUT = Channel.fromPath("${INTOGEN_DATASETS}/steps/hotmaps/*.clusters.gz")
-HOTMAPS_OUT.into{ HOTMAPS_OUT1; HOTMAPS_OUT2 }
+O3D_OUT = Channel.fromPath("${INTOGEN_DATASETS}/steps/oncodrive3d/*.o3d_genes.tsv")
+O3D_OUT.into{ O3D_OUT1; O3D_OUT2 }
 
-process GroupFeaturesHotMAPS {
-	tag "Group features HotMAPS"
+process GroupFeaturesOncodrive3D {
+	tag "Group features Oncodrive3D"
 	label "boostdm"
 	publishDir "${OUTPUT}/features_group", mode: 'copy'
 
 	input:
-        path inputs from HOTMAPS_OUT1.collect()
+        path inputs from O3D_OUT1.collect()
         path cohorts from COHORTS_SUMMARY2
 
     output:
-        path output into HOTMAPS_GROUP
+        path output into O3D_GROUP_RAW
 
 	script:
-		output = "hotmaps.tsv.gz"
+		output = "oncodrive3d_raw.tsv.gz"
 		"""
-		runner.sh features/group.py group-hotmaps \
+		runner.sh features/group.py group-oncodrive3d \
 			--output ${output} \
 			--threshold 0.05 \
 			--cohorts ${cohorts} \
@@ -75,21 +75,42 @@ process GroupFeaturesHotMAPS {
 		"""
 }
 
-HOTMAPS_GROUP_V = HOTMAPS_GROUP.first()
-
-OUT_HOTMAPS_CLUSTERS = HOTMAPS_OUT2.map{it -> [it.baseName.split('\\.')[0], it]}
-
-process RenameHotMAPS {
-	tag "Rename HotMAPS clusters file ${cohort}"
+process GroupFeaturesOncodrive3DGenomicCoordinates {
+	tag "Provide genomic coordinates to Oncodrive3D grouped dataframe"
+	label "boostdm"
+	publishDir "${OUTPUT}/features_group", mode: 'copy'
 
 	input:
-        tuple val(cohort), path(input) from OUT_HOTMAPS_CLUSTERS
+        path input from O3D_GROUP_RAW
 
     output:
-        tuple val(cohort), path(output) into OUT_HOTMAPS_CLUSTERS_RENAMED
+        path output into O3D_GROUP
 
 	script:
-		output = "${cohort}.hotmapsclusters.gz"
+		output = "oncodrive3d.tsv.gz"
+		"""
+		runner.sh utils/residue_to_genomic.py  \
+			--input ${input} \
+			--output ${output}
+		"""
+}
+
+
+O3D_GROUP_V = O3D_GROUP.first()
+
+OUT_O3D_CLUSTERS = O3D_OUT2.map{it -> [it.baseName.split('\\.')[0], it]}
+
+process RenameOncodrive3D {
+	tag "Rename Oncodrive3D clusters file ${cohort}"
+
+	input:
+        tuple val(cohort), path(input) from OUT_O3D_CLUSTERS
+
+    output:
+        tuple val(cohort), path(output) into OUT_O3D_CLUSTERS_RENAMED
+
+	script:
+		output = "${cohort}.oncodrive3dclusters.gz"
 		"""
 		ln -s ${input} ${output}
 		"""
@@ -171,7 +192,7 @@ process CreateDatasets {
         tuple val(cohort), path(dndscv), path(dndscvAnnotMuts), path(mutrate) from CREATE_DATASETS_INCHANNEL
         path driversSummary from DRIVERS_SUMMARY_V
         path groupCLUSTL from CLUSTL_GROUP_V
-        path groupHotMAPS from HOTMAPS_GROUP_V
+        path groupOncodrive3D from O3D_GROUP_V
         path groupSMRegions from SMREGIONS_GROUP_V
 
     output:
@@ -186,11 +207,12 @@ process CreateDatasets {
 			--dndscv-annotmuts-path ${dndscvAnnotMuts} \
 			--mutrate-path ${mutrate} \
 			--clustl-group-path ${groupCLUSTL} \
-			--hotmaps-group-path ${groupHotMAPS} \
+			--oncodrive3d-group-path ${groupOncodrive3D} \
 			--smregions-group-path ${groupSMRegions} \
 			--splits ${params.boostdm.bootstrapSplits} \
 			--threshold ${params.boostdm.xsThresh} \
-                        --out ${output}
+			--out ${output} \
+			--top-level ${params.boostdm.topLevel}
 		"""
 }
 
@@ -238,7 +260,8 @@ process SplitCVMetacohort {
 		runner.sh cvdata/meta.py \
 			--cores ${task.cpus} \
 			--output_path splitcv_meta \
-			--input_path .
+			--input_path . \
+			--top-level ${params.boostdm.topLevel}
 		"""
 }
 

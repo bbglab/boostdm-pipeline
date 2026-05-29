@@ -12,7 +12,7 @@ from boostdm import BoostDMError
 from boostdm.annotations.utils import encode_consequence_type, rectify_synonymous, rectify_missense, rectify_splicing
 from boostdm.globals import MANE_TRANSCRIPTS_FILE, MNVS_FILE, COHORTS_PATH, DRIVERS_PATH
 from boostdm.oncotree import Oncotree
-from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, hotmaps, smregions, dndscv
+from boostdm.features import phylop, consequence_type, aachange, exon, ptms, clustl, oncodrive3d, smregions, dndscv
 from boostdm.passengers import retrieve_exons, randomize
 
 COLUMNS = ['sampleID', 'chr', 'start', 'end', 'ref', 'alt', 'gene']
@@ -76,17 +76,17 @@ def set_string_chr(row):
 # --------
 
 
-def oncotree_sisters(cohort):
+def oncotree_sisters(cohort, top_level):
     
     """Generator of cohorts belonging to the same ttype type as 'cohort'"""
     # TODO re-implement function in terms of oncotree
-    tree = Oncotree()
+    tree = Oncotree(top_level)
     parent = tree.fetch_parent_cohort(cohort)
     cohorts = tree.get_cohorts(parent)
     return cohorts
 
 
-def features(df, cohort, clustl_group_path, hotmaps_group_path, smregions_group_path):
+def features(df, cohort, clustl_group_path, o3d_group_path, smregions_group_path):
 
     """add complete set of features"""
 
@@ -109,24 +109,18 @@ def features(df, cohort, clustl_group_path, hotmaps_group_path, smregions_group_
     ttype = ttype_map[cohort]
 
     # Add linear clusters
-
     clustl_global_data = pd.read_csv(clustl_group_path, sep='\t')
     clustl_ttype_data = clustl_global_data[clustl_global_data['CANCER_TYPE'] == ttype]
     # clustl_global_data = clustl_global_data[['CHROMOSOME', '5_COORD', '3_COORD', 'SCORE']]
     df = clustl.add_feature(df, clustl_ttype_data, clustl_global_data)
 
     # Add 3D clusters
-    hotmaps_global_data = pd.read_csv(hotmaps_group_path, sep='\t')
-    hotmaps_ttype_data = hotmaps_global_data[hotmaps_global_data['CANCER_TYPE'] == ttype]
-    # hotmaps_global_data = hotmaps_global_data[['chromosome', 'pos']]
-    df = hotmaps.add_feature(df, hotmaps_ttype_data, hotmaps_global_data)
+    o3d_global_data = pd.read_csv(o3d_group_path, sep='\t')
+    o3d_global_data['chromosome'] = o3d_global_data['chromosome'].astype(str)
+    o3d_ttype_data = o3d_global_data[o3d_global_data['CANCER_TYPE'] == ttype]
+    df = oncodrive3d.add_feature(df, o3d_ttype_data, o3d_global_data)
 
-    # add role
-    # df_role = pd.read_csv(DRIVERS_PATH, sep='\t')
-    # df_role.rename(columns={'SYMBOL': 'gene', 'ROLE': 'role'}, inplace=True)
-    # df = df.merge(df_role[['gene', 'role']].drop_duplicates())
-
-    # run add_domains
+    # Add smRegions
     smregions_global_data = pd.read_csv(smregions_group_path, sep='\t')
     smregions_ttype_data = smregions_global_data[smregions_global_data['CANCER_TYPE'] == ttype]
     df = smregions.add_feature(df, smregions_ttype_data, smregions_global_data)
@@ -180,14 +174,14 @@ def intersect_region_mutations(cds, pos):
     return drivers
 
 
-def load_drivers(cohort, df):
+def load_drivers(cohort, df, top_level):
 
     # ttype = df[df['COHORT'] == cohort]['CANCER_TYPE'].unique()[0]
     # TODO replace this and get a list of useful cancer types:
     # beware that some cohorts might not have drivers, so the step above
     # will fail but the sister cohorts still can have drivers, so we
     # must use a different mapping
-    cohort_list = oncotree_sisters(cohort)
+    cohort_list = oncotree_sisters(cohort, top_level)
     df_drivers_summary = df[df['COHORT'].isin(cohort_list)]
 
     drivers = df_drivers_summary['SYMBOL'].unique()
@@ -198,6 +192,7 @@ def load_drivers(cohort, df):
 def load_mutations(dndscv_annotated, drivers, cohort):
 
     df = pd.read_csv(dndscv_annotated, sep='\t')  # os.path.join(dndscv_path, f'{cohort}.annotmuts.gz')
+    df['chr'] = df['chr'].astype(str)
 
     df = df[df['gene'].isin(drivers)]
     if len(df) == 0:
@@ -267,12 +262,12 @@ def add_passenger_mutations(df, mutrate, n_splits):
 
 
 def build_table(cohort, dndscv_file, dndscv_annotated_file,
-                mutrate_fn, clustl_group_file, hotmaps_group_file, smregions_group_file,
-                xs_thresh=0.85, n_splits=50):
+                mutrate_fn, clustl_group_file, o3d_group_file, smregions_group_file,
+                xs_thresh=0.85, n_splits=50, top_level="CANCER"):
 
     df_drivers_summary = pd.read_csv(DRIVERS_PATH, sep='\t')
 
-    drivers = load_drivers(cohort, df_drivers_summary)
+    drivers = load_drivers(cohort, df_drivers_summary, top_level)
     if len(drivers) == 0:
         raise BoostDMError('Run failed: no drivers for this cohort')
 
@@ -313,7 +308,7 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
     df.reset_index(drop=True, inplace=True)
 
     # Add features
-    df = features(df, cohort, clustl_group_file, hotmaps_group_file, smregions_group_file)
+    df = features(df, cohort, clustl_group_file, o3d_group_file, smregions_group_file)
     df = encode_consequence_type(df)
     df = df[(df['csqn_type_synonymous'] != 1) | (df['response'] != 1)]
     df = rectify_synonymous(df)
@@ -329,21 +324,22 @@ def build_table(cohort, dndscv_file, dndscv_annotated_file,
 @click.option('--dndscv-annotmuts-path', 'dnds_muts_path', type=click.Path(exists=True), help='Cohort dNdsCV annotmuts out')
 @click.option('--mutrate-path', 'mutrate_path', type=click.Path(exists=True), help='Cohort mutrate out')
 @click.option('--clustl-group-path', 'clustl_group_path', type=click.Path(exists=True), help='Combined OncodriveCLUSTL out')
-@click.option('--hotmaps-group-path', 'hotmaps_group_path', type=click.Path(exists=True), help='Combined HotMAPS out')
+@click.option('--oncodrive3d-group-path', 'oncodrive3d_group_path', type=click.Path(exists=True), help='Combined Oncodrive3D out')
 @click.option('--smregions-group-path', 'smregions_group_path', type=click.Path(exists=True), help='Combined smregions out')
 @click.option('--out', type=click.Path())
 @click.option('--seed', type=int, default=None)
 @click.option('--splits', type=int, default=50)
 @click.option('--threshold', type=float, default=0.85)
+@click.option('--top-level', type=str, default="CANCER")
 def cli(cohort, dndscv_path, dnds_muts_path, mutrate_path, clustl_group_path,
-        hotmaps_group_path, smregions_group_path, out, seed, splits, threshold):
+        oncodrive3d_group_path, smregions_group_path, out, seed, splits, threshold, top_level):
     """build raw mutations table"""
 
     np.random.seed(seed)
 
     df = build_table(cohort, dndscv_path, dnds_muts_path, mutrate_path,
-                     clustl_group_path, hotmaps_group_path, smregions_group_path,
-                     n_splits=splits, xs_thresh=threshold)
+                     clustl_group_path, oncodrive3d_group_path, smregions_group_path,
+                     n_splits=splits, xs_thresh=threshold, top_level=top_level)
 
     df.to_csv(out, sep='\t', index=False)
 

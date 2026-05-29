@@ -4,8 +4,8 @@
 CLUSTL_GROUP = Channel.fromPath("${OUTPUT}/features_group/clustl.tsv.gz")
 CLUSTL_GROUP_V = CLUSTL_GROUP.first()
 
-HOTMAPS_GROUP = Channel.fromPath("${OUTPUT}/features_group/hotmaps.tsv.gz")
-HOTMAPS_GROUP_V = HOTMAPS_GROUP.first()
+O3D_GROUP = Channel.fromPath("${OUTPUT}/features_group/oncodrive3d.tsv.gz")
+O3D_GROUP_V = O3D_GROUP.first()
 
 SMREGIONS_GROUP = Channel.fromPath("${OUTPUT}/features_group/smregions.tsv.gz")
 SMREGIONS_GROUP_V = SMREGIONS_GROUP.first()
@@ -22,7 +22,7 @@ process AnnotateSaturation {
     input:
         tuple val(gene), val(ttype) from GENE_TTYPE_OUT
         path groupCLUSTL from CLUSTL_GROUP_V
-        path groupHotMAPS from HOTMAPS_GROUP_V
+        path groupO3D from O3D_GROUP_V
         path groupSMRegions from SMREGIONS_GROUP_V
 
     output:
@@ -38,8 +38,9 @@ process AnnotateSaturation {
                 --ttype ${ttype} \
                 --mutations ${vep} \
                 --clustl-group ${groupCLUSTL} \
-                --hotmaps-group ${groupHotMAPS} \
+                --oncodrive3d-group ${groupO3D} \
                 --smregions-group ${groupSMRegions} \
+                --top-level ${params.boostdm.topLevel}
         """
 }
 
