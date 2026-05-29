@@ -23,7 +23,7 @@ colors = ['#3a5a40', cmap(2), cmap(1), cmap(6), cmap(4), cmap(5), '#0077b6', '#0
 
 alphas = [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]
 
-names = {'HotMaps': '3D cluster',
+names = {'Oncodrive3D': '3D cluster',
          'CLUSTL': 'Linear cluster',
          'smRegions': 'PFAM domain',
          'PhyloP': 'Conservation',
@@ -33,25 +33,25 @@ names = {'HotMaps': '3D cluster',
          'csqn_type_nonsense': 'Nonsense',
          'csqn_type_splicing': 'Splicing'}
 
-def get_PFAMs_per_transcript(transcript):
+
+def get_domains_per_transcript(transcript):
     
-    BOOSTDM_DATASETS = os.environ['BOOSTDM_DATASETS']
-    PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'pfam_biomart.tsv.gz')
-    PFAM_DOMAINS_INFO = os.path.join(BOOSTDM_DATASETS, 'pfam_info.name.tsv')
-    
-    df_pfam = pd.read_csv(PFAM_DOMAINS_FILE, sep="\t", names=["ENSEMBL_GENE", "ENSEMBL_TRANSCRIPT", "START", "END", "DOMAIN"])
-    df_names = pd.read_csv(PFAM_DOMAINS_INFO, sep="\t", names=["DOMAIN", "CLAN", "CLAN_NAME", "DOMAIN_NAME", "Long Name"])
+    DOMAINS_FILE = os.path.join(os.environ['BOOSTDM_DATASETS'], 'bbgdomains.tsv')
+    df = pd.read_csv(DOMAINS_FILE, sep="\t")
+    df['ENSEMBL_TRANSCRIPT'] = df['ELEMENT_ID'].apply(lambda x: x.split(':')[0])
+    df['DOMAIN'] = df['ELEMENT_ID'].apply(lambda x: x.split(':')[1])
+    df['START'] = df['ELEMENT_ID'].apply(lambda x: int(x.split(':')[2]))
+    df['END'] = df['ELEMENT_ID'].apply(lambda x: int(x.split(':')[3]))
 
     # Get domains
-    df_pfam_gene = df_pfam[(df_pfam["ENSEMBL_TRANSCRIPT"] == transcript)]
-    df_pfam_gene = df_pfam_gene[["ENSEMBL_TRANSCRIPT", "START", "END", "DOMAIN"]].drop_duplicates()
-    df_pfam_gene = pd.merge(df_pfam_gene, df_names[["DOMAIN", "DOMAIN_NAME"]].drop_duplicates(), how="left")
-    if df_pfam_gene.shape[0] > 0:
-        df_pfam_gene["POS"] = df_pfam_gene.apply(lambda row: row["START"] + ((row["END"] - row["START"]) // 2), axis=1)
-        df_pfam_gene["SIZE"] = df_pfam_gene.apply(lambda row: row["END"] - row["START"] + 1, axis=1)
-        df_pfam_gene["Color"] = "#808080ff"  # color Pfam domain
 
-    return df_pfam_gene
+    df_gene = df[(df["ENSEMBL_TRANSCRIPT"] == transcript)]
+    df_gene = df_gene[["ENSEMBL_TRANSCRIPT", "START", "END", "DOMAIN"]].drop_duplicates()
+    if df_gene.shape[0] > 0:
+        df_gene["SIZE"] = df_gene.apply(lambda row: row["END"] - row["START"] + 1, axis=1)
+        df_gene["Color"] = "#808080ff"  # color Pfam domain
+
+    return df_gene
 
 
 """Fetch mutations"""
@@ -100,7 +100,7 @@ def load_saturation_cancer(path, gene, shap_corrected):
                             {
                                 "boostDM_score": list,
                                 "boostDM_class": np.any,
-                                "HotMaps": np.nanmax,
+                                "Oncodrive3D": np.nanmax,
                                 "smRegions": np.nanmax,
                                 "CLUSTL": np.nanmax,
                                 "csqn_type_missense": list,
@@ -296,15 +296,16 @@ def plot_codon_bands(df_pfam_gene, df, ax_0, ax_2, ax_4):
     ax_2.spines['right'].set_visible(False)
     ax_2.spines['top'].set_linewidth(1)
 
-    ax_4.set_ylim(0, 1)
     d = df["boostDM_score"].values
 
     for i, r in df_pfam_gene.iterrows():
         start_base = r['START']
         size_base = r['SIZE']
         rect = patches.Rectangle(xy=(start_base, 0), width=size_base, height=5, color=r["Color"], alpha=0.5, zorder=2)
-        ax_4.annotate(r["DOMAIN_NAME"], xy=(start_base + size_base/3, 0.3), fontsize=5)
+        # ax_4.annotate(r["DOMAIN_NAME"], xy=(start_base + size_base/3, 0.3), fontsize=5)
         ax_4.add_patch(rect)
+
+    ax_4.set_ylim(0, 1)
 
     protein_ticks = [0] + list(map(int, np.linspace(0, max(prot_pos), num=10)))
 
@@ -325,7 +326,7 @@ def tracked_blueprint_all(gene, ttype_model, ttype_features, df_codon, df, sat_p
     for transcript, gene in wanted_df[["ENSEMBL_TRANSCRIPT", "gene"]].drop_duplicates().values:
 
         # get PFAM domains and subset the mutation data
-        subset_data_pfam = get_PFAMs_per_transcript(transcript)
+        subset_data_pfam = get_domains_per_transcript(transcript)
 
         subset_data_muts = df_codon[
             (df_codon["ENSEMBL_TRANSCRIPT"] == transcript)].sort_values(by='Protein_position', ascending=True)
