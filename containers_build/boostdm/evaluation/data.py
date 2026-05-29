@@ -28,8 +28,8 @@ def get_fscore(model_evaluation):
 
 class Hierarchy:
 
-    def __init__(self):
-        self._tree = Oncotree()
+    def __init__(self, top_level):
+        self._tree = Oncotree(top_level)
 
     def climb(self, ttype, gene):
         """
@@ -54,11 +54,11 @@ def meet_condition(fscore, discovery, n_muts):
     return False
 
 
-def evaluate(model_evaluations):
+def evaluate(model_evaluations, top_level):
 
     res = {}
 
-    hierarchy = Hierarchy()
+    hierarchy = Hierarchy(top_level)
 
     for ttype, gene in model_evaluations.keys():
         for tt, gg in hierarchy.climb(ttype, gene):
@@ -76,8 +76,9 @@ def evaluate(model_evaluations):
 @click.command()
 @click.option('--eval_folder', 'eval_folder', type=click.Path(), help='input folder containing autoevaluation results')
 @click.option('--discovery_path', 'discovery_path', type=click.Path(), help='file path to discovery output table')
+@click.option('--top_level', 'top_level', type=str, help='name of the top level tumor type in the oncotree hierarchy')
 @click.option('--output', 'output_file', type=click.Path(), help='output folder')
-def cli(eval_folder, discovery_path, output_file):
+def cli(eval_folder, discovery_path, top_level, output_file):
     
     models = {}
 
@@ -101,7 +102,7 @@ def cli(eval_folder, discovery_path, output_file):
                                  'discovery': discovery,
                                  'n_muts': n_muts}
 
-    res = evaluate(models)
+    res = evaluate(models, top_level)
 
     with gzip.open(output_file, 'wb') as f:
         pickle.dump(res, f)

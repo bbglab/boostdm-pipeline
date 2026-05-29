@@ -72,7 +72,8 @@ process Samples4Discovery {
 		"""
 		runner.sh discovery_index/samples.py \
 			--input ${input} \
-            --output ${output}
+            --output ${output} \
+            --top-level ${params.boostdm.topLevel}
 		"""
 }
 
@@ -98,6 +99,7 @@ process DiscoveryIndex {
 			--output ${output} \
 			--mutations ${mutations} \
 			--samples ${samples} \
-			--evaluation-path ${OUTPUT}/evaluation
+			--evaluation-path ${OUTPUT}/evaluation \
+            --top-level ${params.boostdm.topLevel}
 		"""
 }

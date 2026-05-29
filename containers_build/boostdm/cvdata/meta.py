@@ -49,7 +49,8 @@ def generate(arg):
 @click.option('--input_path', type=str)
 @click.option('--output_path', type=str)
 @click.option('--cores', type=int, default=None)
-def cli(input_path, output_path, cores):
+@click.option('--top-level', type=str, default="CANCER")
+def cli(input_path, output_path, cores, top_level):
     """
     Args:
         input_path: path of the tables
@@ -60,7 +61,7 @@ def cli(input_path, output_path, cores):
     """
 
     # TODO oncotree
-    oncotree = Oncotree()
+    oncotree = Oncotree(top_level)
     ttypes = oncotree.ttypes
     cohorts = defaultdict(list)
     for ttype in ttypes:

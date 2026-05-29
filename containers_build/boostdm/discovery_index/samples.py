@@ -9,8 +9,8 @@ from boostdm.oncotree import Oncotree
 from boostdm.globals import COHORTS_PATH
 
 
-def target_ttypes(cohort):
-    oncotree = Oncotree()
+def target_ttypes(cohort, top_level):
+    oncotree = Oncotree(top_level)
     res = []
     for ttype in oncotree.ttypes:
         ttype_cohorts = oncotree.get_cohorts(ttype)
@@ -19,7 +19,7 @@ def target_ttypes(cohort):
     return res
 
 
-def build_table(input_variants):
+def build_table(input_variants, top_level):
 
     cohorts = pd.read_csv(COHORTS_PATH, sep='\t')
     cohorts_ttype_dict = dict(zip(cohorts['COHORT'], cohorts['CANCER_TYPE']))
@@ -34,7 +34,7 @@ def build_table(input_variants):
         # the samples of the cohort have to be appended 
         # to all the tumor types where the cohorts belongs
 
-        for ttype in target_ttypes(cohort):
+        for ttype in target_ttypes(cohort, top_level):
             if ttype not in samples_info:
                 samples_info[ttype] = []
             list_hypermutators = []
@@ -48,8 +48,9 @@ def build_table(input_variants):
 @click.command()
 @click.option('--input', type=click.Path(exists=True))
 @click.option('--output', type=click.Path())
-def cli(input, output):
-    samples = build_table(input)
+@click.option('--top-level', type=str, default="CANCER")
+def cli(input, output, top_level):
+    samples = build_table(input, top_level)
     with open(output, 'w') as fd:
         json.dump(samples, fd)
 

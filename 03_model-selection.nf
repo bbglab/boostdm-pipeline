@@ -22,6 +22,7 @@ process ModelSelection {
                 runner.sh evaluation/data.py \
                         --eval_folder ${OUTPUT}/evaluation \
                         --discovery_path ${OUTPUT}/discovery/discovery.tsv.gz \
+                        --top_level ${params.boostdm.topLevel} \
                         --output ${output}
                 """
 }

@@ -123,9 +123,10 @@ def discovery_run(samples, mutations, iterations=100, ngrid=20):
 @click.option('--mutations', type=click.Path(exists=True), required=True)
 @click.option('--samples', type=click.Path(exists=True), required=True)
 @click.option('--output', type=str)
-def cli(evaluation_path, mutations, samples, output):
+@click.option('--top-level', type=str, default="CANCER")
+def cli(evaluation_path, mutations, samples, output, top_level):
 
-    tree = Oncotree()
+    tree = Oncotree(top_level)
 
     df_discovery_index = {'gene': [], 'ttype': [], 'n_muts': [], 'n_unique_muts': [],
                           'n_samples': [], 'discovery_index': [], 'discovery_high': [], 'discovery_low': []}

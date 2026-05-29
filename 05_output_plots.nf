@@ -59,6 +59,7 @@ process DiscoveryBending {
         """
         runner.sh output_plots/discovery_plot.py \
                   --gene ${gene} \
-                  --ttmodel ${ttype}
+                  --ttmodel ${ttype} \
+                  --top_level ${params.boostdm.topLevel}
         """
 }

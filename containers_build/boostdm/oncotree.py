@@ -15,19 +15,20 @@ def namespace(tree):
 
 class Oncotree:
 
-    def __init__(self):
+    def __init__(self, top_level):
 
+        self.top_level = top_level
         self.stats_cohorts = pd.read_csv(COHORTS_PATH, sep='\t')
         self.tree_table = pd.read_csv(ONCOTREE_PATH, sep='\t')
         self.tree = self.to_dict()
         self.ttypes = namespace(self.tree)
-
+        
 
     def to_dict(self):
         d = {}
         children_parent_pairs = list(zip(self.tree_table['ID'], self.tree_table['PARENT']))
         for child, parent in children_parent_pairs:
-            if child != 'CANCER':
+            if child != self.top_level:
                 d[parent] = d.get(parent, []) + [child]
         return d
 
@@ -42,12 +43,6 @@ class Oncotree:
             raise Exception(f'tumor type {ttype} is not in oncotree namespace')
 
         cohorts = self.stats_cohorts[self.stats_cohorts["CANCER_TYPE"] == ttype]['COHORT'].tolist()
-
-        # cohorts = [
-        # tuple(x) for x in self.stats_cohorts[self.stats_cohorts["CANCER_TYPE"] == ttype][
-        #        #["COHORT", "SOURCE"]
-        #        ['COHORT']
-        #    ].values]
 
         if ttype not in self.tree:  # ttype is a leaf, then return cohorts gathered from self.stats_cohorts
             return cohorts
@@ -85,7 +80,7 @@ class Oncotree:
         :return: name of the parent
         """
 
-        if (ttype not in self.ttypes) or (ttype == 'CANCER'):
+        if (ttype not in self.ttypes) or (ttype == self.top_level):
             return None
 
         for parent, childs in self.tree.items():
@@ -115,10 +110,3 @@ class Oncotree:
     def is_cohort(self, cohort):
         return cohort in self.stats_cohorts["COHORT"].unique()
 
-
-if __name__ == '__main__':
-
-    tree = Oncotree()
-    print(tree.fetch_parent_ttype("LGG"))
-    print(tree.get_cohorts("CANCER"))
-    print(tree.fetch_parent_cohort("ICGC_WXS_BOCA_UK"))
