@@ -3,6 +3,7 @@ import os
 GENOME_BUILD = os.environ['GENOME_BUILD']
 INTOGEN_DATASETS = os.environ['INTOGEN_DATASETS']
 BOOSTDM_DATASETS = os.environ['BOOSTDM_DATASETS']
+VEP_SATURATION = os.environ['VEP_SATURATION']
 
 COHORTS_PATH = os.path.join(INTOGEN_DATASETS, 'cohorts.tsv')
 DRIVERS_PATH = os.path.join(INTOGEN_DATASETS, 'drivers.tsv')
@@ -11,8 +12,8 @@ MNVS_FILE = os.path.join(INTOGEN_DATASETS, 'steps', 'boostDM', 'mnvs.tsv.gz')
 MANE_TRANSCRIPTS_FILE = os.path.join(BOOSTDM_DATASETS, 'saturation', 'cds-5spli.regions.gz')
 TABIX_FILE = os.path.join(BOOSTDM_DATASETS, 'shared', 'vep.tsv.gz')
 PTMS_FILE = os.path.join(BOOSTDM_DATASETS, 'ptms', 'info_functional_sites.json')
-PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'regions_pfam.tsv')
-ONCOTREE_PATH = os.path.join(BOOSTDM_DATASETS, 'shared', 'tree.tsv')
+PFAM_DOMAINS_FILE = os.path.join(BOOSTDM_DATASETS, 'bbgdomains.tsv')
+ONCOTREE_PATH = os.path.join(BOOSTDM_DATASETS, 'shared', 'tree_by_risk.tsv')
 
 # Consequence list taken from: https://www.ensembl.org/info/genome/variation/prediction/predicted_data.html
 CONSEQUENCES_LIST = [
@@ -74,7 +75,7 @@ AGGREGATION_DICT = {'synonymous_variant': 'synonymous',
                     'intron_variant': 'splicing'}  # TODO: is "intron_variant" necessary?
 
 COLUMNS_TRAINING = [
-        'CLUSTL', 'HotMaps', 'smRegions', 
+        'CLUSTL', 'Oncodrive3D', 'smRegions', 
         'PhyloP',
         'nmd', 
         'Acetylation', 'Methylation', 'Phosphorylation', 'Regulatory_Site', 'Ubiquitination',
